@@ -29,7 +29,7 @@ $(error env var RV_ROOT does not point to a valid dir! Exiting!)
 endif
 
 # Allow snapshot override
-target = default
+target = default_mt
 snapshot = $(target)
 
 # Allow tool override

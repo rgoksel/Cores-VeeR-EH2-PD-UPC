@@ -215,6 +215,7 @@ _start:
 // Hart 1 entry
 // ---------------------------------------------------------------------------
 hart1_main:
+    dbg_char 'H'                    // agent log: hart1 reached hart1_main
     la   t0, h1_pass_count
     sw   zero, 0(t0)
     la   t0, h1_fail_count

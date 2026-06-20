@@ -314,6 +314,9 @@ module tb_top;
     parameter MAX_CYCLES = 10_000_000;
 
     integer fd, tp, el;
+    // #region agent log
+    integer dbg_fd;
+    // #endregion
 
     always @(negedge core_clk) begin
         cycleCnt <= cycleCnt+1;
@@ -326,6 +329,10 @@ module tb_top;
         if( mailbox_data_val & mailbox_write) begin
             $fwrite(fd,"%c", WriteData[7:0]);
             $write("%c", WriteData[7:0]);
+            // #region agent log
+            $fwrite(dbg_fd, "{\"sessionId\":\"6ce145\",\"hypothesisId\":\"H1\",\"location\":\"tb_top.sv:327\",\"message\":\"stdout_char\",\"data\":{\"char\":\"%s\",\"code\":%0d,\"cycle\":%0d}}\n", (WriteData[7:0] >= 8'h20 && WriteData[7:0] < 8'h7f) ? $sformatf("%c", WriteData[7:0]) : "?", WriteData[7:0], cycleCnt);
+            $fflush(dbg_fd);
+            // #endregion
         end
         // End Of test monitor
         if(mailbox_write && WriteData[7:0] == 8'hff) begin
@@ -428,6 +435,9 @@ module tb_top;
         $fwrite (el, "//   Cycle : #inst  hart   pc    opcode    reg=value   ; mnemonic\n");
         $fwrite (el, "//---------------------------------------------------------------\n");
         fd = $fopen("console.log","w");
+        // #region agent log
+        dbg_fd = $fopen("/users/ddegimli/Cores-VeeR-EH2-PD-UPC/.cursor/debug-6ce145.log","a");
+        // #endregion
         preload_dccm();
         preload_iccm();
 

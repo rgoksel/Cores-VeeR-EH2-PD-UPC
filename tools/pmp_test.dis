@@ -1,0 +1,1634 @@
+
+pmp_test.exe:     file format elf32-littleriscv
+
+
+Disassembly of section .text:
+
+00000000 <_start>:
+       0:	b0201073          	csrw	minstret,zero
+       4:	b8201073          	csrw	minstreth,zero
+       8:	00001297          	auipc	t0,0x1
+       c:	47828293          	addi	t0,t0,1144 # 1480 <trap_entry>
+      10:	30529073          	csrw	mtvec,t0
+      14:	5f5552b7          	lui	t0,0x5f555
+      18:	55528293          	addi	t0,t0,1365 # 5f555555 <STACK+0x5f53d465>
+      1c:	7c029073          	csrw	0x7c0,t0
+      20:	3a001073          	csrw	pmpcfg0,zero
+      24:	3a101073          	csrw	pmpcfg1,zero
+      28:	3a201073          	csrw	pmpcfg2,zero
+      2c:	3a301073          	csrw	pmpcfg3,zero
+      30:	3b001073          	csrw	pmpaddr0,zero
+      34:	3b101073          	csrw	pmpaddr1,zero
+      38:	3b201073          	csrw	pmpaddr2,zero
+      3c:	3b301073          	csrw	pmpaddr3,zero
+      40:	3b401073          	csrw	pmpaddr4,zero
+      44:	3b501073          	csrw	pmpaddr5,zero
+      48:	3b601073          	csrw	pmpaddr6,zero
+      4c:	3b701073          	csrw	pmpaddr7,zero
+      50:	3b801073          	csrw	pmpaddr8,zero
+      54:	3b901073          	csrw	pmpaddr9,zero
+      58:	3ba01073          	csrw	pmpaddr10,zero
+      5c:	3bb01073          	csrw	pmpaddr11,zero
+      60:	3bc01073          	csrw	pmpaddr12,zero
+      64:	3bd01073          	csrw	pmpaddr13,zero
+      68:	3be01073          	csrw	pmpaddr14,zero
+      6c:	3bf01073          	csrw	pmpaddr15,zero
+      70:	0001                	nop
+      72:	0001                	nop
+      74:	0001                	nop
+      76:	0001                	nop
+      78:	0001                	nop
+      7a:	0001                	nop
+      7c:	0001                	nop
+      7e:	0001                	nop
+      80:	d05802b7          	lui	t0,0xd0580
+      84:	02300313          	li	t1,35
+      88:	00628023          	sb	t1,0(t0) # d0580000 <STACK+0xd0567f10>
+      8c:	f1402573          	csrr	a0,mhartid
+      90:	893d                	andi	a0,a0,15
+      92:	e93d                	bnez	a0,108 <hart1_main>
+      94:	00010297          	auipc	t0,0x10
+      98:	f6c28293          	addi	t0,t0,-148 # 10000 <h0_pass_count>
+      9c:	0002a023          	sw	zero,0(t0)
+      a0:	00010297          	auipc	t0,0x10
+      a4:	f6428293          	addi	t0,t0,-156 # 10004 <h0_fail_count>
+      a8:	0002a023          	sw	zero,0(t0)
+      ac:	00010297          	auipc	t0,0x10
+      b0:	f5c28293          	addi	t0,t0,-164 # 10008 <h1_pass_count>
+      b4:	0002a023          	sw	zero,0(t0)
+      b8:	00010297          	auipc	t0,0x10
+      bc:	f5428293          	addi	t0,t0,-172 # 1000c <h1_fail_count>
+      c0:	0002a023          	sw	zero,0(t0)
+      c4:	00010297          	auipc	t0,0x10
+      c8:	f4c28293          	addi	t0,t0,-180 # 10010 <h1_done_flag>
+      cc:	0002a023          	sw	zero,0(t0)
+      d0:	00010297          	auipc	t0,0x10
+      d4:	f4828293          	addi	t0,t0,-184 # 10018 <expect_trap_flag>
+      d8:	0002a023          	sw	zero,0(t0)
+      dc:	7fc1d073          	csrwi	0x7fc,3
+      e0:	4285                	li	t0,1
+      e2:	00010317          	auipc	t1,0x10
+      e6:	f3230313          	addi	t1,t1,-206 # 10014 <h1_start_flag>
+      ea:	00532023          	sw	t0,0(t1)
+      ee:	058000ef          	jal	146 <h0_run_tests>
+      f2:	00010297          	auipc	t0,0x10
+      f6:	f1e28293          	addi	t0,t0,-226 # 10010 <h1_done_flag>
+      fa:	0002a303          	lw	t1,0(t0)
+      fe:	fe030ae3          	beqz	t1,f2 <_start+0xf2>
+     102:	278010ef          	jal	137a <h0_report_and_finish>
+     106:	a83d                	j	144 <spin_forever>
+
+00000108 <hart1_main>:
+     108:	00010297          	auipc	t0,0x10
+     10c:	f0028293          	addi	t0,t0,-256 # 10008 <h1_pass_count>
+     110:	0002a023          	sw	zero,0(t0)
+     114:	00010297          	auipc	t0,0x10
+     118:	ef828293          	addi	t0,t0,-264 # 1000c <h1_fail_count>
+     11c:	0002a023          	sw	zero,0(t0)
+     120:	00010297          	auipc	t0,0x10
+     124:	ef428293          	addi	t0,t0,-268 # 10014 <h1_start_flag>
+     128:	0002a303          	lw	t1,0(t0)
+     12c:	fe030ae3          	beqz	t1,120 <hart1_main+0x18>
+     130:	050000ef          	jal	180 <h1_run_tests>
+     134:	4285                	li	t0,1
+     136:	00010317          	auipc	t1,0x10
+     13a:	eda30313          	addi	t1,t1,-294 # 10010 <h1_done_flag>
+     13e:	00532023          	sw	t0,0(t1)
+     142:	a009                	j	144 <spin_forever>
+
+00000144 <spin_forever>:
+     144:	a001                	j	144 <spin_forever>
+
+00000146 <h0_run_tests>:
+     146:	00010297          	auipc	t0,0x10
+     14a:	eda28293          	addi	t0,t0,-294 # 10020 <h0_saved_ra>
+     14e:	0012a023          	sw	ra,0(t0)
+     152:	054000ef          	jal	1a6 <t_csr_basic>
+     156:	1e6000ef          	jal	33c <t_l0_mmode_bypass>
+     15a:	312000ef          	jal	46c <t_locked_tor_load_store>
+     15e:	4c2000ef          	jal	620 <t_locked_fetch_fault>
+     162:	638000ef          	jal	79a <t_napot_rw_fault>
+     166:	7d2000ef          	jal	938 <t_aoff_disabled>
+     16a:	133000ef          	jal	a9c <t_priority_entry0_wins>
+     16e:	2df000ef          	jal	c4c <t_lock_and_tor_lock>
+     172:	00010297          	auipc	t0,0x10
+     176:	eae28293          	addi	t0,t0,-338 # 10020 <h0_saved_ra>
+     17a:	0002a083          	lw	ra,0(t0)
+     17e:	8082                	ret
+
+00000180 <h1_run_tests>:
+     180:	00010297          	auipc	t0,0x10
+     184:	ea428293          	addi	t0,t0,-348 # 10024 <h1_saved_ra>
+     188:	0012a023          	sw	ra,0(t0)
+     18c:	56f000ef          	jal	efa <t_h1_na4_rw>
+     190:	6cf000ef          	jal	105e <t_h1_napot_16b>
+     194:	06c010ef          	jal	1200 <t_h1_chained_tor>
+     198:	00010297          	auipc	t0,0x10
+     19c:	e8c28293          	addi	t0,t0,-372 # 10024 <h1_saved_ra>
+     1a0:	0002a083          	lw	ra,0(t0)
+     1a4:	8082                	ret
+
+000001a6 <t_csr_basic>:
+     1a6:	d05802b7          	lui	t0,0xd0580
+     1aa:	03100313          	li	t1,49
+     1ae:	00628023          	sb	t1,0(t0) # d0580000 <STACK+0xd0567f10>
+     1b2:	3a001073          	csrw	pmpcfg0,zero
+     1b6:	3a101073          	csrw	pmpcfg1,zero
+     1ba:	3a201073          	csrw	pmpcfg2,zero
+     1be:	3a301073          	csrw	pmpcfg3,zero
+     1c2:	3b001073          	csrw	pmpaddr0,zero
+     1c6:	3b101073          	csrw	pmpaddr1,zero
+     1ca:	3b201073          	csrw	pmpaddr2,zero
+     1ce:	3b301073          	csrw	pmpaddr3,zero
+     1d2:	3b401073          	csrw	pmpaddr4,zero
+     1d6:	3b501073          	csrw	pmpaddr5,zero
+     1da:	3b601073          	csrw	pmpaddr6,zero
+     1de:	3b701073          	csrw	pmpaddr7,zero
+     1e2:	3b801073          	csrw	pmpaddr8,zero
+     1e6:	3b901073          	csrw	pmpaddr9,zero
+     1ea:	3ba01073          	csrw	pmpaddr10,zero
+     1ee:	3bb01073          	csrw	pmpaddr11,zero
+     1f2:	3bc01073          	csrw	pmpaddr12,zero
+     1f6:	3bd01073          	csrw	pmpaddr13,zero
+     1fa:	3be01073          	csrw	pmpaddr14,zero
+     1fe:	3bf01073          	csrw	pmpaddr15,zero
+     202:	0001                	nop
+     204:	0001                	nop
+     206:	0001                	nop
+     208:	0001                	nop
+     20a:	0001                	nop
+     20c:	0001                	nop
+     20e:	0001                	nop
+     210:	0001                	nop
+     212:	62c9                	lui	t0,0x12
+     214:	34528293          	addi	t0,t0,837 # 12345 <msg_nl+0x2262>
+     218:	3b329073          	csrw	pmpaddr3,t0
+     21c:	3b3023f3          	csrr	t2,pmpaddr3
+     220:	02729763          	bne	t0,t2,24e <t_csr_basic+0xa8>
+     224:	f1402f73          	csrr	t5,mhartid
+     228:	00ff7f13          	andi	t5,t5,15
+     22c:	000f1763          	bnez	t5,23a <t_csr_basic+0x94>
+     230:	00010f97          	auipc	t6,0x10
+     234:	dd0f8f93          	addi	t6,t6,-560 # 10000 <h0_pass_count>
+     238:	a029                	j	242 <t_csr_basic+0x9c>
+     23a:	00010f97          	auipc	t6,0x10
+     23e:	dcef8f93          	addi	t6,t6,-562 # 10008 <h1_pass_count>
+     242:	000fae83          	lw	t4,0(t6)
+     246:	0e85                	addi	t4,t4,1
+     248:	01dfa023          	sw	t4,0(t6)
+     24c:	a02d                	j	276 <t_csr_basic+0xd0>
+     24e:	f1402f73          	csrr	t5,mhartid
+     252:	00ff7f13          	andi	t5,t5,15
+     256:	000f1763          	bnez	t5,264 <t_csr_basic+0xbe>
+     25a:	00010f97          	auipc	t6,0x10
+     25e:	daaf8f93          	addi	t6,t6,-598 # 10004 <h0_fail_count>
+     262:	a029                	j	26c <t_csr_basic+0xc6>
+     264:	00010f97          	auipc	t6,0x10
+     268:	da8f8f93          	addi	t6,t6,-600 # 1000c <h1_fail_count>
+     26c:	000fae83          	lw	t4,0(t6)
+     270:	0e85                	addi	t4,t4,1
+     272:	01dfa023          	sw	t4,0(t6)
+     276:	42a5                	li	t0,9
+     278:	3a029073          	csrw	pmpcfg0,t0
+     27c:	3a0023f3          	csrr	t2,pmpcfg0
+     280:	0ff3f393          	zext.b	t2,t2
+     284:	02729763          	bne	t0,t2,2b2 <t_csr_basic+0x10c>
+     288:	f1402f73          	csrr	t5,mhartid
+     28c:	00ff7f13          	andi	t5,t5,15
+     290:	000f1763          	bnez	t5,29e <t_csr_basic+0xf8>
+     294:	00010f97          	auipc	t6,0x10
+     298:	d6cf8f93          	addi	t6,t6,-660 # 10000 <h0_pass_count>
+     29c:	a029                	j	2a6 <t_csr_basic+0x100>
+     29e:	00010f97          	auipc	t6,0x10
+     2a2:	d6af8f93          	addi	t6,t6,-662 # 10008 <h1_pass_count>
+     2a6:	000fae83          	lw	t4,0(t6)
+     2aa:	0e85                	addi	t4,t4,1
+     2ac:	01dfa023          	sw	t4,0(t6)
+     2b0:	a02d                	j	2da <t_csr_basic+0x134>
+     2b2:	f1402f73          	csrr	t5,mhartid
+     2b6:	00ff7f13          	andi	t5,t5,15
+     2ba:	000f1763          	bnez	t5,2c8 <t_csr_basic+0x122>
+     2be:	00010f97          	auipc	t6,0x10
+     2c2:	d46f8f93          	addi	t6,t6,-698 # 10004 <h0_fail_count>
+     2c6:	a029                	j	2d0 <t_csr_basic+0x12a>
+     2c8:	00010f97          	auipc	t6,0x10
+     2cc:	d44f8f93          	addi	t6,t6,-700 # 1000c <h1_fail_count>
+     2d0:	000fae83          	lw	t4,0(t6)
+     2d4:	0e85                	addi	t4,t4,1
+     2d6:	01dfa023          	sw	t4,0(t6)
+     2da:	3a001073          	csrw	pmpcfg0,zero
+     2de:	3a101073          	csrw	pmpcfg1,zero
+     2e2:	3a201073          	csrw	pmpcfg2,zero
+     2e6:	3a301073          	csrw	pmpcfg3,zero
+     2ea:	3b001073          	csrw	pmpaddr0,zero
+     2ee:	3b101073          	csrw	pmpaddr1,zero
+     2f2:	3b201073          	csrw	pmpaddr2,zero
+     2f6:	3b301073          	csrw	pmpaddr3,zero
+     2fa:	3b401073          	csrw	pmpaddr4,zero
+     2fe:	3b501073          	csrw	pmpaddr5,zero
+     302:	3b601073          	csrw	pmpaddr6,zero
+     306:	3b701073          	csrw	pmpaddr7,zero
+     30a:	3b801073          	csrw	pmpaddr8,zero
+     30e:	3b901073          	csrw	pmpaddr9,zero
+     312:	3ba01073          	csrw	pmpaddr10,zero
+     316:	3bb01073          	csrw	pmpaddr11,zero
+     31a:	3bc01073          	csrw	pmpaddr12,zero
+     31e:	3bd01073          	csrw	pmpaddr13,zero
+     322:	3be01073          	csrw	pmpaddr14,zero
+     326:	3bf01073          	csrw	pmpaddr15,zero
+     32a:	0001                	nop
+     32c:	0001                	nop
+     32e:	0001                	nop
+     330:	0001                	nop
+     332:	0001                	nop
+     334:	0001                	nop
+     336:	0001                	nop
+     338:	0001                	nop
+     33a:	8082                	ret
+
+0000033c <t_l0_mmode_bypass>:
+     33c:	d05802b7          	lui	t0,0xd0580
+     340:	03200313          	li	t1,50
+     344:	00628023          	sb	t1,0(t0) # d0580000 <STACK+0xd0567f10>
+     348:	3a001073          	csrw	pmpcfg0,zero
+     34c:	3a101073          	csrw	pmpcfg1,zero
+     350:	3a201073          	csrw	pmpcfg2,zero
+     354:	3a301073          	csrw	pmpcfg3,zero
+     358:	3b001073          	csrw	pmpaddr0,zero
+     35c:	3b101073          	csrw	pmpaddr1,zero
+     360:	3b201073          	csrw	pmpaddr2,zero
+     364:	3b301073          	csrw	pmpaddr3,zero
+     368:	3b401073          	csrw	pmpaddr4,zero
+     36c:	3b501073          	csrw	pmpaddr5,zero
+     370:	3b601073          	csrw	pmpaddr6,zero
+     374:	3b701073          	csrw	pmpaddr7,zero
+     378:	3b801073          	csrw	pmpaddr8,zero
+     37c:	3b901073          	csrw	pmpaddr9,zero
+     380:	3ba01073          	csrw	pmpaddr10,zero
+     384:	3bb01073          	csrw	pmpaddr11,zero
+     388:	3bc01073          	csrw	pmpaddr12,zero
+     38c:	3bd01073          	csrw	pmpaddr13,zero
+     390:	3be01073          	csrw	pmpaddr14,zero
+     394:	3bf01073          	csrw	pmpaddr15,zero
+     398:	0001                	nop
+     39a:	0001                	nop
+     39c:	0001                	nop
+     39e:	0001                	nop
+     3a0:	0001                	nop
+     3a2:	0001                	nop
+     3a4:	0001                	nop
+     3a6:	0001                	nop
+     3a8:	00010297          	auipc	t0,0x10
+     3ac:	c9028293          	addi	t0,t0,-880 # 10038 <guard_a_data>
+     3b0:	04028293          	addi	t0,t0,64
+     3b4:	0022d293          	srli	t0,t0,0x2
+     3b8:	3b029073          	csrw	pmpaddr0,t0
+     3bc:	42a1                	li	t0,8
+     3be:	3a029073          	csrw	pmpcfg0,t0
+     3c2:	0001                	nop
+     3c4:	0001                	nop
+     3c6:	0001                	nop
+     3c8:	0001                	nop
+     3ca:	0001                	nop
+     3cc:	0001                	nop
+     3ce:	0001                	nop
+     3d0:	0001                	nop
+     3d2:	00010297          	auipc	t0,0x10
+     3d6:	c6628293          	addi	t0,t0,-922 # 10038 <guard_a_data>
+     3da:	0002a303          	lw	t1,0(t0)
+     3de:	0062a023          	sw	t1,0(t0)
+     3e2:	f1402f73          	csrr	t5,mhartid
+     3e6:	00ff7f13          	andi	t5,t5,15
+     3ea:	000f1763          	bnez	t5,3f8 <t_l0_mmode_bypass+0xbc>
+     3ee:	00010f97          	auipc	t6,0x10
+     3f2:	c12f8f93          	addi	t6,t6,-1006 # 10000 <h0_pass_count>
+     3f6:	a029                	j	400 <t_l0_mmode_bypass+0xc4>
+     3f8:	00010f97          	auipc	t6,0x10
+     3fc:	c10f8f93          	addi	t6,t6,-1008 # 10008 <h1_pass_count>
+     400:	000fae83          	lw	t4,0(t6)
+     404:	0e85                	addi	t4,t4,1
+     406:	01dfa023          	sw	t4,0(t6)
+     40a:	3a001073          	csrw	pmpcfg0,zero
+     40e:	3a101073          	csrw	pmpcfg1,zero
+     412:	3a201073          	csrw	pmpcfg2,zero
+     416:	3a301073          	csrw	pmpcfg3,zero
+     41a:	3b001073          	csrw	pmpaddr0,zero
+     41e:	3b101073          	csrw	pmpaddr1,zero
+     422:	3b201073          	csrw	pmpaddr2,zero
+     426:	3b301073          	csrw	pmpaddr3,zero
+     42a:	3b401073          	csrw	pmpaddr4,zero
+     42e:	3b501073          	csrw	pmpaddr5,zero
+     432:	3b601073          	csrw	pmpaddr6,zero
+     436:	3b701073          	csrw	pmpaddr7,zero
+     43a:	3b801073          	csrw	pmpaddr8,zero
+     43e:	3b901073          	csrw	pmpaddr9,zero
+     442:	3ba01073          	csrw	pmpaddr10,zero
+     446:	3bb01073          	csrw	pmpaddr11,zero
+     44a:	3bc01073          	csrw	pmpaddr12,zero
+     44e:	3bd01073          	csrw	pmpaddr13,zero
+     452:	3be01073          	csrw	pmpaddr14,zero
+     456:	3bf01073          	csrw	pmpaddr15,zero
+     45a:	0001                	nop
+     45c:	0001                	nop
+     45e:	0001                	nop
+     460:	0001                	nop
+     462:	0001                	nop
+     464:	0001                	nop
+     466:	0001                	nop
+     468:	0001                	nop
+     46a:	8082                	ret
+
+0000046c <t_locked_tor_load_store>:
+     46c:	d05802b7          	lui	t0,0xd0580
+     470:	03300313          	li	t1,51
+     474:	00628023          	sb	t1,0(t0) # d0580000 <STACK+0xd0567f10>
+     478:	3a001073          	csrw	pmpcfg0,zero
+     47c:	3a101073          	csrw	pmpcfg1,zero
+     480:	3a201073          	csrw	pmpcfg2,zero
+     484:	3a301073          	csrw	pmpcfg3,zero
+     488:	3b001073          	csrw	pmpaddr0,zero
+     48c:	3b101073          	csrw	pmpaddr1,zero
+     490:	3b201073          	csrw	pmpaddr2,zero
+     494:	3b301073          	csrw	pmpaddr3,zero
+     498:	3b401073          	csrw	pmpaddr4,zero
+     49c:	3b501073          	csrw	pmpaddr5,zero
+     4a0:	3b601073          	csrw	pmpaddr6,zero
+     4a4:	3b701073          	csrw	pmpaddr7,zero
+     4a8:	3b801073          	csrw	pmpaddr8,zero
+     4ac:	3b901073          	csrw	pmpaddr9,zero
+     4b0:	3ba01073          	csrw	pmpaddr10,zero
+     4b4:	3bb01073          	csrw	pmpaddr11,zero
+     4b8:	3bc01073          	csrw	pmpaddr12,zero
+     4bc:	3bd01073          	csrw	pmpaddr13,zero
+     4c0:	3be01073          	csrw	pmpaddr14,zero
+     4c4:	3bf01073          	csrw	pmpaddr15,zero
+     4c8:	0001                	nop
+     4ca:	0001                	nop
+     4cc:	0001                	nop
+     4ce:	0001                	nop
+     4d0:	0001                	nop
+     4d2:	0001                	nop
+     4d4:	0001                	nop
+     4d6:	0001                	nop
+     4d8:	00010297          	auipc	t0,0x10
+     4dc:	b6028293          	addi	t0,t0,-1184 # 10038 <guard_a_data>
+     4e0:	0022d293          	srli	t0,t0,0x2
+     4e4:	3b029073          	csrw	pmpaddr0,t0
+     4e8:	00010297          	auipc	t0,0x10
+     4ec:	b5028293          	addi	t0,t0,-1200 # 10038 <guard_a_data>
+     4f0:	04028293          	addi	t0,t0,64
+     4f4:	0022d293          	srli	t0,t0,0x2
+     4f8:	3b129073          	csrw	pmpaddr1,t0
+     4fc:	62a5                	lui	t0,0x9
+     4fe:	90028293          	addi	t0,t0,-1792 # 8900 <_end+0x735a>
+     502:	3a029073          	csrw	pmpcfg0,t0
+     506:	0001                	nop
+     508:	0001                	nop
+     50a:	0001                	nop
+     50c:	0001                	nop
+     50e:	0001                	nop
+     510:	0001                	nop
+     512:	0001                	nop
+     514:	0001                	nop
+     516:	00010297          	auipc	t0,0x10
+     51a:	b2228293          	addi	t0,t0,-1246 # 10038 <guard_a_data>
+     51e:	0002a303          	lw	t1,0(t0)
+     522:	f1402f73          	csrr	t5,mhartid
+     526:	00ff7f13          	andi	t5,t5,15
+     52a:	000f1763          	bnez	t5,538 <t_locked_tor_load_store+0xcc>
+     52e:	00010f97          	auipc	t6,0x10
+     532:	ad2f8f93          	addi	t6,t6,-1326 # 10000 <h0_pass_count>
+     536:	a029                	j	540 <t_locked_tor_load_store+0xd4>
+     538:	00010f97          	auipc	t6,0x10
+     53c:	ad0f8f93          	addi	t6,t6,-1328 # 10008 <h1_pass_count>
+     540:	000fae83          	lw	t4,0(t6)
+     544:	0e85                	addi	t4,t4,1
+     546:	01dfa023          	sw	t4,0(t6)
+     54a:	4285                	li	t0,1
+     54c:	00010317          	auipc	t1,0x10
+     550:	acc30313          	addi	t1,t1,-1332 # 10018 <expect_trap_flag>
+     554:	00532023          	sw	t0,0(t1)
+     558:	429d                	li	t0,7
+     55a:	00010317          	auipc	t1,0x10
+     55e:	ac230313          	addi	t1,t1,-1342 # 1001c <expect_cause_val>
+     562:	00532023          	sw	t0,0(t1)
+     566:	00010297          	auipc	t0,0x10
+     56a:	ad228293          	addi	t0,t0,-1326 # 10038 <guard_a_data>
+     56e:	deadc337          	lui	t1,0xdeadc
+     572:	eef30313          	addi	t1,t1,-273 # deadbeef <STACK+0xdeac3dff>
+     576:	0062a023          	sw	t1,0(t0)
+     57a:	00010f97          	auipc	t6,0x10
+     57e:	a9ef8f93          	addi	t6,t6,-1378 # 10018 <expect_trap_flag>
+     582:	000faf03          	lw	t5,0(t6)
+     586:	020f0663          	beqz	t5,5b2 <t_locked_tor_load_store+0x146>
+     58a:	f1402f73          	csrr	t5,mhartid
+     58e:	00ff7f13          	andi	t5,t5,15
+     592:	000f1763          	bnez	t5,5a0 <t_locked_tor_load_store+0x134>
+     596:	00010f97          	auipc	t6,0x10
+     59a:	a6ef8f93          	addi	t6,t6,-1426 # 10004 <h0_fail_count>
+     59e:	a029                	j	5a8 <t_locked_tor_load_store+0x13c>
+     5a0:	00010f97          	auipc	t6,0x10
+     5a4:	a6cf8f93          	addi	t6,t6,-1428 # 1000c <h1_fail_count>
+     5a8:	000fae83          	lw	t4,0(t6)
+     5ac:	0e85                	addi	t4,t4,1
+     5ae:	01dfa023          	sw	t4,0(t6)
+     5b2:	00010317          	auipc	t1,0x10
+     5b6:	a6630313          	addi	t1,t1,-1434 # 10018 <expect_trap_flag>
+     5ba:	00032023          	sw	zero,0(t1)
+     5be:	3a001073          	csrw	pmpcfg0,zero
+     5c2:	3a101073          	csrw	pmpcfg1,zero
+     5c6:	3a201073          	csrw	pmpcfg2,zero
+     5ca:	3a301073          	csrw	pmpcfg3,zero
+     5ce:	3b001073          	csrw	pmpaddr0,zero
+     5d2:	3b101073          	csrw	pmpaddr1,zero
+     5d6:	3b201073          	csrw	pmpaddr2,zero
+     5da:	3b301073          	csrw	pmpaddr3,zero
+     5de:	3b401073          	csrw	pmpaddr4,zero
+     5e2:	3b501073          	csrw	pmpaddr5,zero
+     5e6:	3b601073          	csrw	pmpaddr6,zero
+     5ea:	3b701073          	csrw	pmpaddr7,zero
+     5ee:	3b801073          	csrw	pmpaddr8,zero
+     5f2:	3b901073          	csrw	pmpaddr9,zero
+     5f6:	3ba01073          	csrw	pmpaddr10,zero
+     5fa:	3bb01073          	csrw	pmpaddr11,zero
+     5fe:	3bc01073          	csrw	pmpaddr12,zero
+     602:	3bd01073          	csrw	pmpaddr13,zero
+     606:	3be01073          	csrw	pmpaddr14,zero
+     60a:	3bf01073          	csrw	pmpaddr15,zero
+     60e:	0001                	nop
+     610:	0001                	nop
+     612:	0001                	nop
+     614:	0001                	nop
+     616:	0001                	nop
+     618:	0001                	nop
+     61a:	0001                	nop
+     61c:	0001                	nop
+     61e:	8082                	ret
+
+00000620 <t_locked_fetch_fault>:
+     620:	d05802b7          	lui	t0,0xd0580
+     624:	03400313          	li	t1,52
+     628:	00628023          	sb	t1,0(t0) # d0580000 <STACK+0xd0567f10>
+     62c:	00010297          	auipc	t0,0x10
+     630:	9fc28293          	addi	t0,t0,-1540 # 10028 <fetch4_saved_ra>
+     634:	0012a023          	sw	ra,0(t0)
+     638:	3a001073          	csrw	pmpcfg0,zero
+     63c:	3a101073          	csrw	pmpcfg1,zero
+     640:	3a201073          	csrw	pmpcfg2,zero
+     644:	3a301073          	csrw	pmpcfg3,zero
+     648:	3b001073          	csrw	pmpaddr0,zero
+     64c:	3b101073          	csrw	pmpaddr1,zero
+     650:	3b201073          	csrw	pmpaddr2,zero
+     654:	3b301073          	csrw	pmpaddr3,zero
+     658:	3b401073          	csrw	pmpaddr4,zero
+     65c:	3b501073          	csrw	pmpaddr5,zero
+     660:	3b601073          	csrw	pmpaddr6,zero
+     664:	3b701073          	csrw	pmpaddr7,zero
+     668:	3b801073          	csrw	pmpaddr8,zero
+     66c:	3b901073          	csrw	pmpaddr9,zero
+     670:	3ba01073          	csrw	pmpaddr10,zero
+     674:	3bb01073          	csrw	pmpaddr11,zero
+     678:	3bc01073          	csrw	pmpaddr12,zero
+     67c:	3bd01073          	csrw	pmpaddr13,zero
+     680:	3be01073          	csrw	pmpaddr14,zero
+     684:	3bf01073          	csrw	pmpaddr15,zero
+     688:	0001                	nop
+     68a:	0001                	nop
+     68c:	0001                	nop
+     68e:	0001                	nop
+     690:	0001                	nop
+     692:	0001                	nop
+     694:	0001                	nop
+     696:	0001                	nop
+     698:	09100293          	li	t0,145
+     69c:	3a029073          	csrw	pmpcfg0,t0
+     6a0:	00001297          	auipc	t0,0x1
+     6a4:	eca28293          	addi	t0,t0,-310 # 156a <fetch_island>
+     6a8:	0022d293          	srli	t0,t0,0x2
+     6ac:	3b029073          	csrw	pmpaddr0,t0
+     6b0:	0001                	nop
+     6b2:	0001                	nop
+     6b4:	0001                	nop
+     6b6:	0001                	nop
+     6b8:	0001                	nop
+     6ba:	0001                	nop
+     6bc:	0001                	nop
+     6be:	0001                	nop
+     6c0:	4285                	li	t0,1
+     6c2:	00010317          	auipc	t1,0x10
+     6c6:	95630313          	addi	t1,t1,-1706 # 10018 <expect_trap_flag>
+     6ca:	00532023          	sw	t0,0(t1)
+     6ce:	4285                	li	t0,1
+     6d0:	00010317          	auipc	t1,0x10
+     6d4:	94c30313          	addi	t1,t1,-1716 # 1001c <expect_cause_val>
+     6d8:	00532023          	sw	t0,0(t1)
+     6dc:	00001297          	auipc	t0,0x1
+     6e0:	e8e28293          	addi	t0,t0,-370 # 156a <fetch_island>
+     6e4:	000280e7          	jalr	t0
+     6e8:	00010f97          	auipc	t6,0x10
+     6ec:	930f8f93          	addi	t6,t6,-1744 # 10018 <expect_trap_flag>
+     6f0:	000faf03          	lw	t5,0(t6)
+     6f4:	020f0663          	beqz	t5,720 <t_locked_fetch_fault+0x100>
+     6f8:	f1402f73          	csrr	t5,mhartid
+     6fc:	00ff7f13          	andi	t5,t5,15
+     700:	000f1763          	bnez	t5,70e <t_locked_fetch_fault+0xee>
+     704:	00010f97          	auipc	t6,0x10
+     708:	900f8f93          	addi	t6,t6,-1792 # 10004 <h0_fail_count>
+     70c:	a029                	j	716 <t_locked_fetch_fault+0xf6>
+     70e:	00010f97          	auipc	t6,0x10
+     712:	8fef8f93          	addi	t6,t6,-1794 # 1000c <h1_fail_count>
+     716:	000fae83          	lw	t4,0(t6)
+     71a:	0e85                	addi	t4,t4,1
+     71c:	01dfa023          	sw	t4,0(t6)
+     720:	00010317          	auipc	t1,0x10
+     724:	8f830313          	addi	t1,t1,-1800 # 10018 <expect_trap_flag>
+     728:	00032023          	sw	zero,0(t1)
+     72c:	00010297          	auipc	t0,0x10
+     730:	8fc28293          	addi	t0,t0,-1796 # 10028 <fetch4_saved_ra>
+     734:	0002a083          	lw	ra,0(t0)
+     738:	3a001073          	csrw	pmpcfg0,zero
+     73c:	3a101073          	csrw	pmpcfg1,zero
+     740:	3a201073          	csrw	pmpcfg2,zero
+     744:	3a301073          	csrw	pmpcfg3,zero
+     748:	3b001073          	csrw	pmpaddr0,zero
+     74c:	3b101073          	csrw	pmpaddr1,zero
+     750:	3b201073          	csrw	pmpaddr2,zero
+     754:	3b301073          	csrw	pmpaddr3,zero
+     758:	3b401073          	csrw	pmpaddr4,zero
+     75c:	3b501073          	csrw	pmpaddr5,zero
+     760:	3b601073          	csrw	pmpaddr6,zero
+     764:	3b701073          	csrw	pmpaddr7,zero
+     768:	3b801073          	csrw	pmpaddr8,zero
+     76c:	3b901073          	csrw	pmpaddr9,zero
+     770:	3ba01073          	csrw	pmpaddr10,zero
+     774:	3bb01073          	csrw	pmpaddr11,zero
+     778:	3bc01073          	csrw	pmpaddr12,zero
+     77c:	3bd01073          	csrw	pmpaddr13,zero
+     780:	3be01073          	csrw	pmpaddr14,zero
+     784:	3bf01073          	csrw	pmpaddr15,zero
+     788:	0001                	nop
+     78a:	0001                	nop
+     78c:	0001                	nop
+     78e:	0001                	nop
+     790:	0001                	nop
+     792:	0001                	nop
+     794:	0001                	nop
+     796:	0001                	nop
+     798:	8082                	ret
+
+0000079a <t_napot_rw_fault>:
+     79a:	d05802b7          	lui	t0,0xd0580
+     79e:	03500313          	li	t1,53
+     7a2:	00628023          	sb	t1,0(t0) # d0580000 <STACK+0xd0567f10>
+     7a6:	3a001073          	csrw	pmpcfg0,zero
+     7aa:	3a101073          	csrw	pmpcfg1,zero
+     7ae:	3a201073          	csrw	pmpcfg2,zero
+     7b2:	3a301073          	csrw	pmpcfg3,zero
+     7b6:	3b001073          	csrw	pmpaddr0,zero
+     7ba:	3b101073          	csrw	pmpaddr1,zero
+     7be:	3b201073          	csrw	pmpaddr2,zero
+     7c2:	3b301073          	csrw	pmpaddr3,zero
+     7c6:	3b401073          	csrw	pmpaddr4,zero
+     7ca:	3b501073          	csrw	pmpaddr5,zero
+     7ce:	3b601073          	csrw	pmpaddr6,zero
+     7d2:	3b701073          	csrw	pmpaddr7,zero
+     7d6:	3b801073          	csrw	pmpaddr8,zero
+     7da:	3b901073          	csrw	pmpaddr9,zero
+     7de:	3ba01073          	csrw	pmpaddr10,zero
+     7e2:	3bb01073          	csrw	pmpaddr11,zero
+     7e6:	3bc01073          	csrw	pmpaddr12,zero
+     7ea:	3bd01073          	csrw	pmpaddr13,zero
+     7ee:	3be01073          	csrw	pmpaddr14,zero
+     7f2:	3bf01073          	csrw	pmpaddr15,zero
+     7f6:	0001                	nop
+     7f8:	0001                	nop
+     7fa:	0001                	nop
+     7fc:	0001                	nop
+     7fe:	0001                	nop
+     800:	0001                	nop
+     802:	0001                	nop
+     804:	0001                	nop
+     806:	09900293          	li	t0,153
+     80a:	3a029073          	csrw	pmpcfg0,t0
+     80e:	00010297          	auipc	t0,0x10
+     812:	82a28293          	addi	t0,t0,-2006 # 10038 <guard_a_data>
+     816:	0022d293          	srli	t0,t0,0x2
+     81a:	3b029073          	csrw	pmpaddr0,t0
+     81e:	0001                	nop
+     820:	0001                	nop
+     822:	0001                	nop
+     824:	0001                	nop
+     826:	0001                	nop
+     828:	0001                	nop
+     82a:	0001                	nop
+     82c:	0001                	nop
+     82e:	00010297          	auipc	t0,0x10
+     832:	80a28293          	addi	t0,t0,-2038 # 10038 <guard_a_data>
+     836:	0002a303          	lw	t1,0(t0)
+     83a:	f1402f73          	csrr	t5,mhartid
+     83e:	00ff7f13          	andi	t5,t5,15
+     842:	000f1763          	bnez	t5,850 <t_napot_rw_fault+0xb6>
+     846:	0000ff97          	auipc	t6,0xf
+     84a:	7baf8f93          	addi	t6,t6,1978 # 10000 <h0_pass_count>
+     84e:	a029                	j	858 <t_napot_rw_fault+0xbe>
+     850:	0000ff97          	auipc	t6,0xf
+     854:	7b8f8f93          	addi	t6,t6,1976 # 10008 <h1_pass_count>
+     858:	000fae83          	lw	t4,0(t6)
+     85c:	0e85                	addi	t4,t4,1
+     85e:	01dfa023          	sw	t4,0(t6)
+     862:	4285                	li	t0,1
+     864:	0000f317          	auipc	t1,0xf
+     868:	7b430313          	addi	t1,t1,1972 # 10018 <expect_trap_flag>
+     86c:	00532023          	sw	t0,0(t1)
+     870:	429d                	li	t0,7
+     872:	0000f317          	auipc	t1,0xf
+     876:	7aa30313          	addi	t1,t1,1962 # 1001c <expect_cause_val>
+     87a:	00532023          	sw	t0,0(t1)
+     87e:	0000f297          	auipc	t0,0xf
+     882:	7ba28293          	addi	t0,t0,1978 # 10038 <guard_a_data>
+     886:	a5a5a337          	lui	t1,0xa5a5a
+     88a:	5a530313          	addi	t1,t1,1445 # a5a5a5a5 <STACK+0xa5a424b5>
+     88e:	0062a023          	sw	t1,0(t0)
+     892:	0000ff97          	auipc	t6,0xf
+     896:	786f8f93          	addi	t6,t6,1926 # 10018 <expect_trap_flag>
+     89a:	000faf03          	lw	t5,0(t6)
+     89e:	020f0663          	beqz	t5,8ca <t_napot_rw_fault+0x130>
+     8a2:	f1402f73          	csrr	t5,mhartid
+     8a6:	00ff7f13          	andi	t5,t5,15
+     8aa:	000f1763          	bnez	t5,8b8 <t_napot_rw_fault+0x11e>
+     8ae:	0000ff97          	auipc	t6,0xf
+     8b2:	756f8f93          	addi	t6,t6,1878 # 10004 <h0_fail_count>
+     8b6:	a029                	j	8c0 <t_napot_rw_fault+0x126>
+     8b8:	0000ff97          	auipc	t6,0xf
+     8bc:	754f8f93          	addi	t6,t6,1876 # 1000c <h1_fail_count>
+     8c0:	000fae83          	lw	t4,0(t6)
+     8c4:	0e85                	addi	t4,t4,1
+     8c6:	01dfa023          	sw	t4,0(t6)
+     8ca:	0000f317          	auipc	t1,0xf
+     8ce:	74e30313          	addi	t1,t1,1870 # 10018 <expect_trap_flag>
+     8d2:	00032023          	sw	zero,0(t1)
+     8d6:	3a001073          	csrw	pmpcfg0,zero
+     8da:	3a101073          	csrw	pmpcfg1,zero
+     8de:	3a201073          	csrw	pmpcfg2,zero
+     8e2:	3a301073          	csrw	pmpcfg3,zero
+     8e6:	3b001073          	csrw	pmpaddr0,zero
+     8ea:	3b101073          	csrw	pmpaddr1,zero
+     8ee:	3b201073          	csrw	pmpaddr2,zero
+     8f2:	3b301073          	csrw	pmpaddr3,zero
+     8f6:	3b401073          	csrw	pmpaddr4,zero
+     8fa:	3b501073          	csrw	pmpaddr5,zero
+     8fe:	3b601073          	csrw	pmpaddr6,zero
+     902:	3b701073          	csrw	pmpaddr7,zero
+     906:	3b801073          	csrw	pmpaddr8,zero
+     90a:	3b901073          	csrw	pmpaddr9,zero
+     90e:	3ba01073          	csrw	pmpaddr10,zero
+     912:	3bb01073          	csrw	pmpaddr11,zero
+     916:	3bc01073          	csrw	pmpaddr12,zero
+     91a:	3bd01073          	csrw	pmpaddr13,zero
+     91e:	3be01073          	csrw	pmpaddr14,zero
+     922:	3bf01073          	csrw	pmpaddr15,zero
+     926:	0001                	nop
+     928:	0001                	nop
+     92a:	0001                	nop
+     92c:	0001                	nop
+     92e:	0001                	nop
+     930:	0001                	nop
+     932:	0001                	nop
+     934:	0001                	nop
+     936:	8082                	ret
+
+00000938 <t_aoff_disabled>:
+     938:	d05802b7          	lui	t0,0xd0580
+     93c:	03600313          	li	t1,54
+     940:	00628023          	sb	t1,0(t0) # d0580000 <STACK+0xd0567f10>
+     944:	3a001073          	csrw	pmpcfg0,zero
+     948:	3a101073          	csrw	pmpcfg1,zero
+     94c:	3a201073          	csrw	pmpcfg2,zero
+     950:	3a301073          	csrw	pmpcfg3,zero
+     954:	3b001073          	csrw	pmpaddr0,zero
+     958:	3b101073          	csrw	pmpaddr1,zero
+     95c:	3b201073          	csrw	pmpaddr2,zero
+     960:	3b301073          	csrw	pmpaddr3,zero
+     964:	3b401073          	csrw	pmpaddr4,zero
+     968:	3b501073          	csrw	pmpaddr5,zero
+     96c:	3b601073          	csrw	pmpaddr6,zero
+     970:	3b701073          	csrw	pmpaddr7,zero
+     974:	3b801073          	csrw	pmpaddr8,zero
+     978:	3b901073          	csrw	pmpaddr9,zero
+     97c:	3ba01073          	csrw	pmpaddr10,zero
+     980:	3bb01073          	csrw	pmpaddr11,zero
+     984:	3bc01073          	csrw	pmpaddr12,zero
+     988:	3bd01073          	csrw	pmpaddr13,zero
+     98c:	3be01073          	csrw	pmpaddr14,zero
+     990:	3bf01073          	csrw	pmpaddr15,zero
+     994:	0001                	nop
+     996:	0001                	nop
+     998:	0001                	nop
+     99a:	0001                	nop
+     99c:	0001                	nop
+     99e:	0001                	nop
+     9a0:	0001                	nop
+     9a2:	0001                	nop
+     9a4:	08000293          	li	t0,128
+     9a8:	3a029073          	csrw	pmpcfg0,t0
+     9ac:	0000f297          	auipc	t0,0xf
+     9b0:	68c28293          	addi	t0,t0,1676 # 10038 <guard_a_data>
+     9b4:	0022d293          	srli	t0,t0,0x2
+     9b8:	3b029073          	csrw	pmpaddr0,t0
+     9bc:	0001                	nop
+     9be:	0001                	nop
+     9c0:	0001                	nop
+     9c2:	0001                	nop
+     9c4:	0001                	nop
+     9c6:	0001                	nop
+     9c8:	0001                	nop
+     9ca:	0001                	nop
+     9cc:	0000f297          	auipc	t0,0xf
+     9d0:	66c28293          	addi	t0,t0,1644 # 10038 <guard_a_data>
+     9d4:	12345337          	lui	t1,0x12345
+     9d8:	67830313          	addi	t1,t1,1656 # 12345678 <STACK+0x1232d588>
+     9dc:	0062a023          	sw	t1,0(t0)
+     9e0:	0002a383          	lw	t2,0(t0)
+     9e4:	02731763          	bne	t1,t2,a12 <t_aoff_disabled+0xda>
+     9e8:	f1402f73          	csrr	t5,mhartid
+     9ec:	00ff7f13          	andi	t5,t5,15
+     9f0:	000f1763          	bnez	t5,9fe <t_aoff_disabled+0xc6>
+     9f4:	0000ff97          	auipc	t6,0xf
+     9f8:	60cf8f93          	addi	t6,t6,1548 # 10000 <h0_pass_count>
+     9fc:	a029                	j	a06 <t_aoff_disabled+0xce>
+     9fe:	0000ff97          	auipc	t6,0xf
+     a02:	60af8f93          	addi	t6,t6,1546 # 10008 <h1_pass_count>
+     a06:	000fae83          	lw	t4,0(t6)
+     a0a:	0e85                	addi	t4,t4,1
+     a0c:	01dfa023          	sw	t4,0(t6)
+     a10:	a02d                	j	a3a <t_aoff_disabled+0x102>
+     a12:	f1402f73          	csrr	t5,mhartid
+     a16:	00ff7f13          	andi	t5,t5,15
+     a1a:	000f1763          	bnez	t5,a28 <t_aoff_disabled+0xf0>
+     a1e:	0000ff97          	auipc	t6,0xf
+     a22:	5e6f8f93          	addi	t6,t6,1510 # 10004 <h0_fail_count>
+     a26:	a029                	j	a30 <t_aoff_disabled+0xf8>
+     a28:	0000ff97          	auipc	t6,0xf
+     a2c:	5e4f8f93          	addi	t6,t6,1508 # 1000c <h1_fail_count>
+     a30:	000fae83          	lw	t4,0(t6)
+     a34:	0e85                	addi	t4,t4,1
+     a36:	01dfa023          	sw	t4,0(t6)
+     a3a:	3a001073          	csrw	pmpcfg0,zero
+     a3e:	3a101073          	csrw	pmpcfg1,zero
+     a42:	3a201073          	csrw	pmpcfg2,zero
+     a46:	3a301073          	csrw	pmpcfg3,zero
+     a4a:	3b001073          	csrw	pmpaddr0,zero
+     a4e:	3b101073          	csrw	pmpaddr1,zero
+     a52:	3b201073          	csrw	pmpaddr2,zero
+     a56:	3b301073          	csrw	pmpaddr3,zero
+     a5a:	3b401073          	csrw	pmpaddr4,zero
+     a5e:	3b501073          	csrw	pmpaddr5,zero
+     a62:	3b601073          	csrw	pmpaddr6,zero
+     a66:	3b701073          	csrw	pmpaddr7,zero
+     a6a:	3b801073          	csrw	pmpaddr8,zero
+     a6e:	3b901073          	csrw	pmpaddr9,zero
+     a72:	3ba01073          	csrw	pmpaddr10,zero
+     a76:	3bb01073          	csrw	pmpaddr11,zero
+     a7a:	3bc01073          	csrw	pmpaddr12,zero
+     a7e:	3bd01073          	csrw	pmpaddr13,zero
+     a82:	3be01073          	csrw	pmpaddr14,zero
+     a86:	3bf01073          	csrw	pmpaddr15,zero
+     a8a:	0001                	nop
+     a8c:	0001                	nop
+     a8e:	0001                	nop
+     a90:	0001                	nop
+     a92:	0001                	nop
+     a94:	0001                	nop
+     a96:	0001                	nop
+     a98:	0001                	nop
+     a9a:	8082                	ret
+
+00000a9c <t_priority_entry0_wins>:
+     a9c:	d05802b7          	lui	t0,0xd0580
+     aa0:	03700313          	li	t1,55
+     aa4:	00628023          	sb	t1,0(t0) # d0580000 <STACK+0xd0567f10>
+     aa8:	3a001073          	csrw	pmpcfg0,zero
+     aac:	3a101073          	csrw	pmpcfg1,zero
+     ab0:	3a201073          	csrw	pmpcfg2,zero
+     ab4:	3a301073          	csrw	pmpcfg3,zero
+     ab8:	3b001073          	csrw	pmpaddr0,zero
+     abc:	3b101073          	csrw	pmpaddr1,zero
+     ac0:	3b201073          	csrw	pmpaddr2,zero
+     ac4:	3b301073          	csrw	pmpaddr3,zero
+     ac8:	3b401073          	csrw	pmpaddr4,zero
+     acc:	3b501073          	csrw	pmpaddr5,zero
+     ad0:	3b601073          	csrw	pmpaddr6,zero
+     ad4:	3b701073          	csrw	pmpaddr7,zero
+     ad8:	3b801073          	csrw	pmpaddr8,zero
+     adc:	3b901073          	csrw	pmpaddr9,zero
+     ae0:	3ba01073          	csrw	pmpaddr10,zero
+     ae4:	3bb01073          	csrw	pmpaddr11,zero
+     ae8:	3bc01073          	csrw	pmpaddr12,zero
+     aec:	3bd01073          	csrw	pmpaddr13,zero
+     af0:	3be01073          	csrw	pmpaddr14,zero
+     af4:	3bf01073          	csrw	pmpaddr15,zero
+     af8:	0001                	nop
+     afa:	0001                	nop
+     afc:	0001                	nop
+     afe:	0001                	nop
+     b00:	0001                	nop
+     b02:	0001                	nop
+     b04:	0001                	nop
+     b06:	0001                	nop
+     b08:	0000fe17          	auipc	t3,0xf
+     b0c:	530e0e13          	addi	t3,t3,1328 # 10038 <guard_a_data>
+     b10:	002e5e13          	srli	t3,t3,0x2
+     b14:	09100293          	li	t0,145
+     b18:	6325                	lui	t1,0x9
+     b1a:	f0030313          	addi	t1,t1,-256 # 8f00 <_end+0x795a>
+     b1e:	0062e2b3          	or	t0,t0,t1
+     b22:	3a029073          	csrw	pmpcfg0,t0
+     b26:	3b0e1073          	csrw	pmpaddr0,t3
+     b2a:	0000f297          	auipc	t0,0xf
+     b2e:	50e28293          	addi	t0,t0,1294 # 10038 <guard_a_data>
+     b32:	04028293          	addi	t0,t0,64
+     b36:	0022d293          	srli	t0,t0,0x2
+     b3a:	3b129073          	csrw	pmpaddr1,t0
+     b3e:	0001                	nop
+     b40:	0001                	nop
+     b42:	0001                	nop
+     b44:	0001                	nop
+     b46:	0001                	nop
+     b48:	0001                	nop
+     b4a:	0001                	nop
+     b4c:	0001                	nop
+     b4e:	0000f297          	auipc	t0,0xf
+     b52:	4ea28293          	addi	t0,t0,1258 # 10038 <guard_a_data>
+     b56:	0002a303          	lw	t1,0(t0)
+     b5a:	f1402f73          	csrr	t5,mhartid
+     b5e:	00ff7f13          	andi	t5,t5,15
+     b62:	000f1763          	bnez	t5,b70 <t_priority_entry0_wins+0xd4>
+     b66:	0000ff97          	auipc	t6,0xf
+     b6a:	49af8f93          	addi	t6,t6,1178 # 10000 <h0_pass_count>
+     b6e:	a029                	j	b78 <t_priority_entry0_wins+0xdc>
+     b70:	0000ff97          	auipc	t6,0xf
+     b74:	498f8f93          	addi	t6,t6,1176 # 10008 <h1_pass_count>
+     b78:	000fae83          	lw	t4,0(t6)
+     b7c:	0e85                	addi	t4,t4,1
+     b7e:	01dfa023          	sw	t4,0(t6)
+     b82:	4285                	li	t0,1
+     b84:	0000f317          	auipc	t1,0xf
+     b88:	49430313          	addi	t1,t1,1172 # 10018 <expect_trap_flag>
+     b8c:	00532023          	sw	t0,0(t1)
+     b90:	429d                	li	t0,7
+     b92:	0000f317          	auipc	t1,0xf
+     b96:	48a30313          	addi	t1,t1,1162 # 1001c <expect_cause_val>
+     b9a:	00532023          	sw	t0,0(t1)
+     b9e:	05500313          	li	t1,85
+     ba2:	0062a023          	sw	t1,0(t0)
+     ba6:	0000ff97          	auipc	t6,0xf
+     baa:	472f8f93          	addi	t6,t6,1138 # 10018 <expect_trap_flag>
+     bae:	000faf03          	lw	t5,0(t6)
+     bb2:	020f0663          	beqz	t5,bde <t_priority_entry0_wins+0x142>
+     bb6:	f1402f73          	csrr	t5,mhartid
+     bba:	00ff7f13          	andi	t5,t5,15
+     bbe:	000f1763          	bnez	t5,bcc <t_priority_entry0_wins+0x130>
+     bc2:	0000ff97          	auipc	t6,0xf
+     bc6:	442f8f93          	addi	t6,t6,1090 # 10004 <h0_fail_count>
+     bca:	a029                	j	bd4 <t_priority_entry0_wins+0x138>
+     bcc:	0000ff97          	auipc	t6,0xf
+     bd0:	440f8f93          	addi	t6,t6,1088 # 1000c <h1_fail_count>
+     bd4:	000fae83          	lw	t4,0(t6)
+     bd8:	0e85                	addi	t4,t4,1
+     bda:	01dfa023          	sw	t4,0(t6)
+     bde:	0000f317          	auipc	t1,0xf
+     be2:	43a30313          	addi	t1,t1,1082 # 10018 <expect_trap_flag>
+     be6:	00032023          	sw	zero,0(t1)
+     bea:	3a001073          	csrw	pmpcfg0,zero
+     bee:	3a101073          	csrw	pmpcfg1,zero
+     bf2:	3a201073          	csrw	pmpcfg2,zero
+     bf6:	3a301073          	csrw	pmpcfg3,zero
+     bfa:	3b001073          	csrw	pmpaddr0,zero
+     bfe:	3b101073          	csrw	pmpaddr1,zero
+     c02:	3b201073          	csrw	pmpaddr2,zero
+     c06:	3b301073          	csrw	pmpaddr3,zero
+     c0a:	3b401073          	csrw	pmpaddr4,zero
+     c0e:	3b501073          	csrw	pmpaddr5,zero
+     c12:	3b601073          	csrw	pmpaddr6,zero
+     c16:	3b701073          	csrw	pmpaddr7,zero
+     c1a:	3b801073          	csrw	pmpaddr8,zero
+     c1e:	3b901073          	csrw	pmpaddr9,zero
+     c22:	3ba01073          	csrw	pmpaddr10,zero
+     c26:	3bb01073          	csrw	pmpaddr11,zero
+     c2a:	3bc01073          	csrw	pmpaddr12,zero
+     c2e:	3bd01073          	csrw	pmpaddr13,zero
+     c32:	3be01073          	csrw	pmpaddr14,zero
+     c36:	3bf01073          	csrw	pmpaddr15,zero
+     c3a:	0001                	nop
+     c3c:	0001                	nop
+     c3e:	0001                	nop
+     c40:	0001                	nop
+     c42:	0001                	nop
+     c44:	0001                	nop
+     c46:	0001                	nop
+     c48:	0001                	nop
+     c4a:	8082                	ret
+
+00000c4c <t_lock_and_tor_lock>:
+     c4c:	d05802b7          	lui	t0,0xd0580
+     c50:	03800313          	li	t1,56
+     c54:	00628023          	sb	t1,0(t0) # d0580000 <STACK+0xd0567f10>
+     c58:	3a001073          	csrw	pmpcfg0,zero
+     c5c:	3a101073          	csrw	pmpcfg1,zero
+     c60:	3a201073          	csrw	pmpcfg2,zero
+     c64:	3a301073          	csrw	pmpcfg3,zero
+     c68:	3b001073          	csrw	pmpaddr0,zero
+     c6c:	3b101073          	csrw	pmpaddr1,zero
+     c70:	3b201073          	csrw	pmpaddr2,zero
+     c74:	3b301073          	csrw	pmpaddr3,zero
+     c78:	3b401073          	csrw	pmpaddr4,zero
+     c7c:	3b501073          	csrw	pmpaddr5,zero
+     c80:	3b601073          	csrw	pmpaddr6,zero
+     c84:	3b701073          	csrw	pmpaddr7,zero
+     c88:	3b801073          	csrw	pmpaddr8,zero
+     c8c:	3b901073          	csrw	pmpaddr9,zero
+     c90:	3ba01073          	csrw	pmpaddr10,zero
+     c94:	3bb01073          	csrw	pmpaddr11,zero
+     c98:	3bc01073          	csrw	pmpaddr12,zero
+     c9c:	3bd01073          	csrw	pmpaddr13,zero
+     ca0:	3be01073          	csrw	pmpaddr14,zero
+     ca4:	3bf01073          	csrw	pmpaddr15,zero
+     ca8:	0001                	nop
+     caa:	0001                	nop
+     cac:	0001                	nop
+     cae:	0001                	nop
+     cb0:	0001                	nop
+     cb2:	0001                	nop
+     cb4:	0001                	nop
+     cb6:	0001                	nop
+     cb8:	0000f297          	auipc	t0,0xf
+     cbc:	38028293          	addi	t0,t0,896 # 10038 <guard_a_data>
+     cc0:	0022d293          	srli	t0,t0,0x2
+     cc4:	3b029073          	csrw	pmpaddr0,t0
+     cc8:	0000f297          	auipc	t0,0xf
+     ccc:	37028293          	addi	t0,t0,880 # 10038 <guard_a_data>
+     cd0:	04028293          	addi	t0,t0,64
+     cd4:	0022d293          	srli	t0,t0,0x2
+     cd8:	3b129073          	csrw	pmpaddr1,t0
+     cdc:	62a5                	lui	t0,0x9
+     cde:	90028293          	addi	t0,t0,-1792 # 8900 <_end+0x735a>
+     ce2:	3a029073          	csrw	pmpcfg0,t0
+     ce6:	0001                	nop
+     ce8:	0001                	nop
+     cea:	0001                	nop
+     cec:	0001                	nop
+     cee:	0001                	nop
+     cf0:	0001                	nop
+     cf2:	0001                	nop
+     cf4:	0001                	nop
+     cf6:	3a001073          	csrw	pmpcfg0,zero
+     cfa:	3a0023f3          	csrr	t2,pmpcfg0
+     cfe:	6e25                	lui	t3,0x9
+     d00:	900e0e13          	addi	t3,t3,-1792 # 8900 <_end+0x735a>
+     d04:	03c39763          	bne	t2,t3,d32 <t_lock_and_tor_lock+0xe6>
+     d08:	f1402f73          	csrr	t5,mhartid
+     d0c:	00ff7f13          	andi	t5,t5,15
+     d10:	000f1763          	bnez	t5,d1e <t_lock_and_tor_lock+0xd2>
+     d14:	0000ff97          	auipc	t6,0xf
+     d18:	2ecf8f93          	addi	t6,t6,748 # 10000 <h0_pass_count>
+     d1c:	a029                	j	d26 <t_lock_and_tor_lock+0xda>
+     d1e:	0000ff97          	auipc	t6,0xf
+     d22:	2eaf8f93          	addi	t6,t6,746 # 10008 <h1_pass_count>
+     d26:	000fae83          	lw	t4,0(t6)
+     d2a:	0e85                	addi	t4,t4,1
+     d2c:	01dfa023          	sw	t4,0(t6)
+     d30:	a02d                	j	d5a <t_lock_and_tor_lock+0x10e>
+     d32:	f1402f73          	csrr	t5,mhartid
+     d36:	00ff7f13          	andi	t5,t5,15
+     d3a:	000f1763          	bnez	t5,d48 <t_lock_and_tor_lock+0xfc>
+     d3e:	0000ff97          	auipc	t6,0xf
+     d42:	2c6f8f93          	addi	t6,t6,710 # 10004 <h0_fail_count>
+     d46:	a029                	j	d50 <t_lock_and_tor_lock+0x104>
+     d48:	0000ff97          	auipc	t6,0xf
+     d4c:	2c4f8f93          	addi	t6,t6,708 # 1000c <h1_fail_count>
+     d50:	000fae83          	lw	t4,0(t6)
+     d54:	0e85                	addi	t4,t4,1
+     d56:	01dfa023          	sw	t4,0(t6)
+     d5a:	0000fe17          	auipc	t3,0xf
+     d5e:	2dee0e13          	addi	t3,t3,734 # 10038 <guard_a_data>
+     d62:	002e5e13          	srli	t3,t3,0x2
+     d66:	001002b7          	lui	t0,0x100
+     d6a:	12fd                	addi	t0,t0,-1 # fffff <STACK+0xe7f0f>
+     d6c:	3b029073          	csrw	pmpaddr0,t0
+     d70:	3b0023f3          	csrr	t2,pmpaddr0
+     d74:	03c39763          	bne	t2,t3,da2 <t_lock_and_tor_lock+0x156>
+     d78:	f1402f73          	csrr	t5,mhartid
+     d7c:	00ff7f13          	andi	t5,t5,15
+     d80:	000f1763          	bnez	t5,d8e <t_lock_and_tor_lock+0x142>
+     d84:	0000ff97          	auipc	t6,0xf
+     d88:	27cf8f93          	addi	t6,t6,636 # 10000 <h0_pass_count>
+     d8c:	a029                	j	d96 <t_lock_and_tor_lock+0x14a>
+     d8e:	0000ff97          	auipc	t6,0xf
+     d92:	27af8f93          	addi	t6,t6,634 # 10008 <h1_pass_count>
+     d96:	000fae83          	lw	t4,0(t6)
+     d9a:	0e85                	addi	t4,t4,1
+     d9c:	01dfa023          	sw	t4,0(t6)
+     da0:	a02d                	j	dca <t_lock_and_tor_lock+0x17e>
+     da2:	f1402f73          	csrr	t5,mhartid
+     da6:	00ff7f13          	andi	t5,t5,15
+     daa:	000f1763          	bnez	t5,db8 <t_lock_and_tor_lock+0x16c>
+     dae:	0000ff97          	auipc	t6,0xf
+     db2:	256f8f93          	addi	t6,t6,598 # 10004 <h0_fail_count>
+     db6:	a029                	j	dc0 <t_lock_and_tor_lock+0x174>
+     db8:	0000ff97          	auipc	t6,0xf
+     dbc:	254f8f93          	addi	t6,t6,596 # 1000c <h1_fail_count>
+     dc0:	000fae83          	lw	t4,0(t6)
+     dc4:	0e85                	addi	t4,t4,1
+     dc6:	01dfa023          	sw	t4,0(t6)
+     dca:	0000fe17          	auipc	t3,0xf
+     dce:	26ee0e13          	addi	t3,t3,622 # 10038 <guard_a_data>
+     dd2:	040e0e13          	addi	t3,t3,64
+     dd6:	002e5e13          	srli	t3,t3,0x2
+     dda:	3b101073          	csrw	pmpaddr1,zero
+     dde:	3b1023f3          	csrr	t2,pmpaddr1
+     de2:	03c39763          	bne	t2,t3,e10 <t_lock_and_tor_lock+0x1c4>
+     de6:	f1402f73          	csrr	t5,mhartid
+     dea:	00ff7f13          	andi	t5,t5,15
+     dee:	000f1763          	bnez	t5,dfc <t_lock_and_tor_lock+0x1b0>
+     df2:	0000ff97          	auipc	t6,0xf
+     df6:	20ef8f93          	addi	t6,t6,526 # 10000 <h0_pass_count>
+     dfa:	a029                	j	e04 <t_lock_and_tor_lock+0x1b8>
+     dfc:	0000ff97          	auipc	t6,0xf
+     e00:	20cf8f93          	addi	t6,t6,524 # 10008 <h1_pass_count>
+     e04:	000fae83          	lw	t4,0(t6)
+     e08:	0e85                	addi	t4,t4,1
+     e0a:	01dfa023          	sw	t4,0(t6)
+     e0e:	a02d                	j	e38 <t_lock_and_tor_lock+0x1ec>
+     e10:	f1402f73          	csrr	t5,mhartid
+     e14:	00ff7f13          	andi	t5,t5,15
+     e18:	000f1763          	bnez	t5,e26 <t_lock_and_tor_lock+0x1da>
+     e1c:	0000ff97          	auipc	t6,0xf
+     e20:	1e8f8f93          	addi	t6,t6,488 # 10004 <h0_fail_count>
+     e24:	a029                	j	e2e <t_lock_and_tor_lock+0x1e2>
+     e26:	0000ff97          	auipc	t6,0xf
+     e2a:	1e6f8f93          	addi	t6,t6,486 # 1000c <h1_fail_count>
+     e2e:	000fae83          	lw	t4,0(t6)
+     e32:	0e85                	addi	t4,t4,1
+     e34:	01dfa023          	sw	t4,0(t6)
+     e38:	3a001073          	csrw	pmpcfg0,zero
+     e3c:	3a101073          	csrw	pmpcfg1,zero
+     e40:	3a201073          	csrw	pmpcfg2,zero
+     e44:	3a301073          	csrw	pmpcfg3,zero
+     e48:	3b001073          	csrw	pmpaddr0,zero
+     e4c:	3b101073          	csrw	pmpaddr1,zero
+     e50:	3b201073          	csrw	pmpaddr2,zero
+     e54:	3b301073          	csrw	pmpaddr3,zero
+     e58:	3b401073          	csrw	pmpaddr4,zero
+     e5c:	3b501073          	csrw	pmpaddr5,zero
+     e60:	3b601073          	csrw	pmpaddr6,zero
+     e64:	3b701073          	csrw	pmpaddr7,zero
+     e68:	3b801073          	csrw	pmpaddr8,zero
+     e6c:	3b901073          	csrw	pmpaddr9,zero
+     e70:	3ba01073          	csrw	pmpaddr10,zero
+     e74:	3bb01073          	csrw	pmpaddr11,zero
+     e78:	3bc01073          	csrw	pmpaddr12,zero
+     e7c:	3bd01073          	csrw	pmpaddr13,zero
+     e80:	3be01073          	csrw	pmpaddr14,zero
+     e84:	3bf01073          	csrw	pmpaddr15,zero
+     e88:	0001                	nop
+     e8a:	0001                	nop
+     e8c:	0001                	nop
+     e8e:	0001                	nop
+     e90:	0001                	nop
+     e92:	0001                	nop
+     e94:	0001                	nop
+     e96:	0001                	nop
+     e98:	3a0023f3          	csrr	t2,pmpcfg0
+     e9c:	6e25                	lui	t3,0x9
+     e9e:	900e0e13          	addi	t3,t3,-1792 # 8900 <_end+0x735a>
+     ea2:	03c39763          	bne	t2,t3,ed0 <t_lock_and_tor_lock+0x284>
+     ea6:	f1402f73          	csrr	t5,mhartid
+     eaa:	00ff7f13          	andi	t5,t5,15
+     eae:	000f1763          	bnez	t5,ebc <t_lock_and_tor_lock+0x270>
+     eb2:	0000ff97          	auipc	t6,0xf
+     eb6:	14ef8f93          	addi	t6,t6,334 # 10000 <h0_pass_count>
+     eba:	a029                	j	ec4 <t_lock_and_tor_lock+0x278>
+     ebc:	0000ff97          	auipc	t6,0xf
+     ec0:	14cf8f93          	addi	t6,t6,332 # 10008 <h1_pass_count>
+     ec4:	000fae83          	lw	t4,0(t6)
+     ec8:	0e85                	addi	t4,t4,1
+     eca:	01dfa023          	sw	t4,0(t6)
+     ece:	a02d                	j	ef8 <t_lock_and_tor_lock+0x2ac>
+     ed0:	f1402f73          	csrr	t5,mhartid
+     ed4:	00ff7f13          	andi	t5,t5,15
+     ed8:	000f1763          	bnez	t5,ee6 <t_lock_and_tor_lock+0x29a>
+     edc:	0000ff97          	auipc	t6,0xf
+     ee0:	128f8f93          	addi	t6,t6,296 # 10004 <h0_fail_count>
+     ee4:	a029                	j	eee <t_lock_and_tor_lock+0x2a2>
+     ee6:	0000ff97          	auipc	t6,0xf
+     eea:	126f8f93          	addi	t6,t6,294 # 1000c <h1_fail_count>
+     eee:	000fae83          	lw	t4,0(t6)
+     ef2:	0e85                	addi	t4,t4,1
+     ef4:	01dfa023          	sw	t4,0(t6)
+     ef8:	8082                	ret
+
+00000efa <t_h1_na4_rw>:
+     efa:	d05802b7          	lui	t0,0xd0580
+     efe:	06100313          	li	t1,97
+     f02:	00628023          	sb	t1,0(t0) # d0580000 <STACK+0xd0567f10>
+     f06:	3a001073          	csrw	pmpcfg0,zero
+     f0a:	3a101073          	csrw	pmpcfg1,zero
+     f0e:	3a201073          	csrw	pmpcfg2,zero
+     f12:	3a301073          	csrw	pmpcfg3,zero
+     f16:	3b001073          	csrw	pmpaddr0,zero
+     f1a:	3b101073          	csrw	pmpaddr1,zero
+     f1e:	3b201073          	csrw	pmpaddr2,zero
+     f22:	3b301073          	csrw	pmpaddr3,zero
+     f26:	3b401073          	csrw	pmpaddr4,zero
+     f2a:	3b501073          	csrw	pmpaddr5,zero
+     f2e:	3b601073          	csrw	pmpaddr6,zero
+     f32:	3b701073          	csrw	pmpaddr7,zero
+     f36:	3b801073          	csrw	pmpaddr8,zero
+     f3a:	3b901073          	csrw	pmpaddr9,zero
+     f3e:	3ba01073          	csrw	pmpaddr10,zero
+     f42:	3bb01073          	csrw	pmpaddr11,zero
+     f46:	3bc01073          	csrw	pmpaddr12,zero
+     f4a:	3bd01073          	csrw	pmpaddr13,zero
+     f4e:	3be01073          	csrw	pmpaddr14,zero
+     f52:	3bf01073          	csrw	pmpaddr15,zero
+     f56:	0001                	nop
+     f58:	0001                	nop
+     f5a:	0001                	nop
+     f5c:	0001                	nop
+     f5e:	0001                	nop
+     f60:	0001                	nop
+     f62:	0001                	nop
+     f64:	0001                	nop
+     f66:	0000f297          	auipc	t0,0xf
+     f6a:	11a28293          	addi	t0,t0,282 # 10080 <guard_b_data>
+     f6e:	0022d293          	srli	t0,t0,0x2
+     f72:	3b029073          	csrw	pmpaddr0,t0
+     f76:	09300293          	li	t0,147
+     f7a:	3a029073          	csrw	pmpcfg0,t0
+     f7e:	0001                	nop
+     f80:	0001                	nop
+     f82:	0001                	nop
+     f84:	0001                	nop
+     f86:	0001                	nop
+     f88:	0001                	nop
+     f8a:	0001                	nop
+     f8c:	0001                	nop
+     f8e:	0000f297          	auipc	t0,0xf
+     f92:	0f228293          	addi	t0,t0,242 # 10080 <guard_b_data>
+     f96:	12345337          	lui	t1,0x12345
+     f9a:	67830313          	addi	t1,t1,1656 # 12345678 <STACK+0x1232d588>
+     f9e:	0062a023          	sw	t1,0(t0)
+     fa2:	0002a383          	lw	t2,0(t0)
+     fa6:	02731763          	bne	t1,t2,fd4 <t_h1_na4_rw+0xda>
+     faa:	f1402f73          	csrr	t5,mhartid
+     fae:	00ff7f13          	andi	t5,t5,15
+     fb2:	000f1763          	bnez	t5,fc0 <t_h1_na4_rw+0xc6>
+     fb6:	0000ff97          	auipc	t6,0xf
+     fba:	04af8f93          	addi	t6,t6,74 # 10000 <h0_pass_count>
+     fbe:	a029                	j	fc8 <t_h1_na4_rw+0xce>
+     fc0:	0000ff97          	auipc	t6,0xf
+     fc4:	048f8f93          	addi	t6,t6,72 # 10008 <h1_pass_count>
+     fc8:	000fae83          	lw	t4,0(t6)
+     fcc:	0e85                	addi	t4,t4,1
+     fce:	01dfa023          	sw	t4,0(t6)
+     fd2:	a02d                	j	ffc <t_h1_na4_rw+0x102>
+     fd4:	f1402f73          	csrr	t5,mhartid
+     fd8:	00ff7f13          	andi	t5,t5,15
+     fdc:	000f1763          	bnez	t5,fea <t_h1_na4_rw+0xf0>
+     fe0:	0000ff97          	auipc	t6,0xf
+     fe4:	024f8f93          	addi	t6,t6,36 # 10004 <h0_fail_count>
+     fe8:	a029                	j	ff2 <t_h1_na4_rw+0xf8>
+     fea:	0000ff97          	auipc	t6,0xf
+     fee:	022f8f93          	addi	t6,t6,34 # 1000c <h1_fail_count>
+     ff2:	000fae83          	lw	t4,0(t6)
+     ff6:	0e85                	addi	t4,t4,1
+     ff8:	01dfa023          	sw	t4,0(t6)
+     ffc:	3a001073          	csrw	pmpcfg0,zero
+    1000:	3a101073          	csrw	pmpcfg1,zero
+    1004:	3a201073          	csrw	pmpcfg2,zero
+    1008:	3a301073          	csrw	pmpcfg3,zero
+    100c:	3b001073          	csrw	pmpaddr0,zero
+    1010:	3b101073          	csrw	pmpaddr1,zero
+    1014:	3b201073          	csrw	pmpaddr2,zero
+    1018:	3b301073          	csrw	pmpaddr3,zero
+    101c:	3b401073          	csrw	pmpaddr4,zero
+    1020:	3b501073          	csrw	pmpaddr5,zero
+    1024:	3b601073          	csrw	pmpaddr6,zero
+    1028:	3b701073          	csrw	pmpaddr7,zero
+    102c:	3b801073          	csrw	pmpaddr8,zero
+    1030:	3b901073          	csrw	pmpaddr9,zero
+    1034:	3ba01073          	csrw	pmpaddr10,zero
+    1038:	3bb01073          	csrw	pmpaddr11,zero
+    103c:	3bc01073          	csrw	pmpaddr12,zero
+    1040:	3bd01073          	csrw	pmpaddr13,zero
+    1044:	3be01073          	csrw	pmpaddr14,zero
+    1048:	3bf01073          	csrw	pmpaddr15,zero
+    104c:	0001                	nop
+    104e:	0001                	nop
+    1050:	0001                	nop
+    1052:	0001                	nop
+    1054:	0001                	nop
+    1056:	0001                	nop
+    1058:	0001                	nop
+    105a:	0001                	nop
+    105c:	8082                	ret
+
+0000105e <t_h1_napot_16b>:
+    105e:	d05802b7          	lui	t0,0xd0580
+    1062:	06200313          	li	t1,98
+    1066:	00628023          	sb	t1,0(t0) # d0580000 <STACK+0xd0567f10>
+    106a:	3a001073          	csrw	pmpcfg0,zero
+    106e:	3a101073          	csrw	pmpcfg1,zero
+    1072:	3a201073          	csrw	pmpcfg2,zero
+    1076:	3a301073          	csrw	pmpcfg3,zero
+    107a:	3b001073          	csrw	pmpaddr0,zero
+    107e:	3b101073          	csrw	pmpaddr1,zero
+    1082:	3b201073          	csrw	pmpaddr2,zero
+    1086:	3b301073          	csrw	pmpaddr3,zero
+    108a:	3b401073          	csrw	pmpaddr4,zero
+    108e:	3b501073          	csrw	pmpaddr5,zero
+    1092:	3b601073          	csrw	pmpaddr6,zero
+    1096:	3b701073          	csrw	pmpaddr7,zero
+    109a:	3b801073          	csrw	pmpaddr8,zero
+    109e:	3b901073          	csrw	pmpaddr9,zero
+    10a2:	3ba01073          	csrw	pmpaddr10,zero
+    10a6:	3bb01073          	csrw	pmpaddr11,zero
+    10aa:	3bc01073          	csrw	pmpaddr12,zero
+    10ae:	3bd01073          	csrw	pmpaddr13,zero
+    10b2:	3be01073          	csrw	pmpaddr14,zero
+    10b6:	3bf01073          	csrw	pmpaddr15,zero
+    10ba:	0001                	nop
+    10bc:	0001                	nop
+    10be:	0001                	nop
+    10c0:	0001                	nop
+    10c2:	0001                	nop
+    10c4:	0001                	nop
+    10c6:	0001                	nop
+    10c8:	0001                	nop
+    10ca:	09900293          	li	t0,153
+    10ce:	3a029073          	csrw	pmpcfg0,t0
+    10d2:	0000f297          	auipc	t0,0xf
+    10d6:	fae28293          	addi	t0,t0,-82 # 10080 <guard_b_data>
+    10da:	0022d293          	srli	t0,t0,0x2
+    10de:	0012e293          	ori	t0,t0,1
+    10e2:	3b029073          	csrw	pmpaddr0,t0
+    10e6:	0001                	nop
+    10e8:	0001                	nop
+    10ea:	0001                	nop
+    10ec:	0001                	nop
+    10ee:	0001                	nop
+    10f0:	0001                	nop
+    10f2:	0001                	nop
+    10f4:	0001                	nop
+    10f6:	0000f297          	auipc	t0,0xf
+    10fa:	f8a28293          	addi	t0,t0,-118 # 10080 <guard_b_data>
+    10fe:	0002a303          	lw	t1,0(t0)
+    1102:	f1402f73          	csrr	t5,mhartid
+    1106:	00ff7f13          	andi	t5,t5,15
+    110a:	000f1763          	bnez	t5,1118 <t_h1_napot_16b+0xba>
+    110e:	0000ff97          	auipc	t6,0xf
+    1112:	ef2f8f93          	addi	t6,t6,-270 # 10000 <h0_pass_count>
+    1116:	a029                	j	1120 <t_h1_napot_16b+0xc2>
+    1118:	0000ff97          	auipc	t6,0xf
+    111c:	ef0f8f93          	addi	t6,t6,-272 # 10008 <h1_pass_count>
+    1120:	000fae83          	lw	t4,0(t6)
+    1124:	0e85                	addi	t4,t4,1
+    1126:	01dfa023          	sw	t4,0(t6)
+    112a:	4285                	li	t0,1
+    112c:	0000f317          	auipc	t1,0xf
+    1130:	eec30313          	addi	t1,t1,-276 # 10018 <expect_trap_flag>
+    1134:	00532023          	sw	t0,0(t1)
+    1138:	429d                	li	t0,7
+    113a:	0000f317          	auipc	t1,0xf
+    113e:	ee230313          	addi	t1,t1,-286 # 1001c <expect_cause_val>
+    1142:	00532023          	sw	t0,0(t1)
+    1146:	0000f297          	auipc	t0,0xf
+    114a:	f3a28293          	addi	t0,t0,-198 # 10080 <guard_b_data>
+    114e:	deadc337          	lui	t1,0xdeadc
+    1152:	0de30313          	addi	t1,t1,222 # deadc0de <STACK+0xdeac3fee>
+    1156:	0062a023          	sw	t1,0(t0)
+    115a:	0000ff97          	auipc	t6,0xf
+    115e:	ebef8f93          	addi	t6,t6,-322 # 10018 <expect_trap_flag>
+    1162:	000faf03          	lw	t5,0(t6)
+    1166:	020f0663          	beqz	t5,1192 <t_h1_napot_16b+0x134>
+    116a:	f1402f73          	csrr	t5,mhartid
+    116e:	00ff7f13          	andi	t5,t5,15
+    1172:	000f1763          	bnez	t5,1180 <t_h1_napot_16b+0x122>
+    1176:	0000ff97          	auipc	t6,0xf
+    117a:	e8ef8f93          	addi	t6,t6,-370 # 10004 <h0_fail_count>
+    117e:	a029                	j	1188 <t_h1_napot_16b+0x12a>
+    1180:	0000ff97          	auipc	t6,0xf
+    1184:	e8cf8f93          	addi	t6,t6,-372 # 1000c <h1_fail_count>
+    1188:	000fae83          	lw	t4,0(t6)
+    118c:	0e85                	addi	t4,t4,1
+    118e:	01dfa023          	sw	t4,0(t6)
+    1192:	0000f317          	auipc	t1,0xf
+    1196:	e8630313          	addi	t1,t1,-378 # 10018 <expect_trap_flag>
+    119a:	00032023          	sw	zero,0(t1)
+    119e:	3a001073          	csrw	pmpcfg0,zero
+    11a2:	3a101073          	csrw	pmpcfg1,zero
+    11a6:	3a201073          	csrw	pmpcfg2,zero
+    11aa:	3a301073          	csrw	pmpcfg3,zero
+    11ae:	3b001073          	csrw	pmpaddr0,zero
+    11b2:	3b101073          	csrw	pmpaddr1,zero
+    11b6:	3b201073          	csrw	pmpaddr2,zero
+    11ba:	3b301073          	csrw	pmpaddr3,zero
+    11be:	3b401073          	csrw	pmpaddr4,zero
+    11c2:	3b501073          	csrw	pmpaddr5,zero
+    11c6:	3b601073          	csrw	pmpaddr6,zero
+    11ca:	3b701073          	csrw	pmpaddr7,zero
+    11ce:	3b801073          	csrw	pmpaddr8,zero
+    11d2:	3b901073          	csrw	pmpaddr9,zero
+    11d6:	3ba01073          	csrw	pmpaddr10,zero
+    11da:	3bb01073          	csrw	pmpaddr11,zero
+    11de:	3bc01073          	csrw	pmpaddr12,zero
+    11e2:	3bd01073          	csrw	pmpaddr13,zero
+    11e6:	3be01073          	csrw	pmpaddr14,zero
+    11ea:	3bf01073          	csrw	pmpaddr15,zero
+    11ee:	0001                	nop
+    11f0:	0001                	nop
+    11f2:	0001                	nop
+    11f4:	0001                	nop
+    11f6:	0001                	nop
+    11f8:	0001                	nop
+    11fa:	0001                	nop
+    11fc:	0001                	nop
+    11fe:	8082                	ret
+
+00001200 <t_h1_chained_tor>:
+    1200:	d05802b7          	lui	t0,0xd0580
+    1204:	06300313          	li	t1,99
+    1208:	00628023          	sb	t1,0(t0) # d0580000 <STACK+0xd0567f10>
+    120c:	3a001073          	csrw	pmpcfg0,zero
+    1210:	3a101073          	csrw	pmpcfg1,zero
+    1214:	3a201073          	csrw	pmpcfg2,zero
+    1218:	3a301073          	csrw	pmpcfg3,zero
+    121c:	3b001073          	csrw	pmpaddr0,zero
+    1220:	3b101073          	csrw	pmpaddr1,zero
+    1224:	3b201073          	csrw	pmpaddr2,zero
+    1228:	3b301073          	csrw	pmpaddr3,zero
+    122c:	3b401073          	csrw	pmpaddr4,zero
+    1230:	3b501073          	csrw	pmpaddr5,zero
+    1234:	3b601073          	csrw	pmpaddr6,zero
+    1238:	3b701073          	csrw	pmpaddr7,zero
+    123c:	3b801073          	csrw	pmpaddr8,zero
+    1240:	3b901073          	csrw	pmpaddr9,zero
+    1244:	3ba01073          	csrw	pmpaddr10,zero
+    1248:	3bb01073          	csrw	pmpaddr11,zero
+    124c:	3bc01073          	csrw	pmpaddr12,zero
+    1250:	3bd01073          	csrw	pmpaddr13,zero
+    1254:	3be01073          	csrw	pmpaddr14,zero
+    1258:	3bf01073          	csrw	pmpaddr15,zero
+    125c:	0001                	nop
+    125e:	0001                	nop
+    1260:	0001                	nop
+    1262:	0001                	nop
+    1264:	0001                	nop
+    1266:	0001                	nop
+    1268:	0001                	nop
+    126a:	0001                	nop
+    126c:	0000f297          	auipc	t0,0xf
+    1270:	e1428293          	addi	t0,t0,-492 # 10080 <guard_b_data>
+    1274:	0022d293          	srli	t0,t0,0x2
+    1278:	3b029073          	csrw	pmpaddr0,t0
+    127c:	0000f297          	auipc	t0,0xf
+    1280:	e0428293          	addi	t0,t0,-508 # 10080 <guard_b_data>
+    1284:	04028293          	addi	t0,t0,64
+    1288:	0022d293          	srli	t0,t0,0x2
+    128c:	3b129073          	csrw	pmpaddr1,t0
+    1290:	62a5                	lui	t0,0x9
+    1292:	b0028293          	addi	t0,t0,-1280 # 8b00 <_end+0x755a>
+    1296:	3a029073          	csrw	pmpcfg0,t0
+    129a:	0001                	nop
+    129c:	0001                	nop
+    129e:	0001                	nop
+    12a0:	0001                	nop
+    12a2:	0001                	nop
+    12a4:	0001                	nop
+    12a6:	0001                	nop
+    12a8:	0001                	nop
+    12aa:	0000f297          	auipc	t0,0xf
+    12ae:	dd628293          	addi	t0,t0,-554 # 10080 <guard_b_data>
+    12b2:	a5a5a337          	lui	t1,0xa5a5a
+    12b6:	5a530313          	addi	t1,t1,1445 # a5a5a5a5 <STACK+0xa5a424b5>
+    12ba:	0062a023          	sw	t1,0(t0)
+    12be:	0002a383          	lw	t2,0(t0)
+    12c2:	02731763          	bne	t1,t2,12f0 <t_h1_chained_tor+0xf0>
+    12c6:	f1402f73          	csrr	t5,mhartid
+    12ca:	00ff7f13          	andi	t5,t5,15
+    12ce:	000f1763          	bnez	t5,12dc <t_h1_chained_tor+0xdc>
+    12d2:	0000ff97          	auipc	t6,0xf
+    12d6:	d2ef8f93          	addi	t6,t6,-722 # 10000 <h0_pass_count>
+    12da:	a029                	j	12e4 <t_h1_chained_tor+0xe4>
+    12dc:	0000ff97          	auipc	t6,0xf
+    12e0:	d2cf8f93          	addi	t6,t6,-724 # 10008 <h1_pass_count>
+    12e4:	000fae83          	lw	t4,0(t6)
+    12e8:	0e85                	addi	t4,t4,1
+    12ea:	01dfa023          	sw	t4,0(t6)
+    12ee:	a02d                	j	1318 <t_h1_chained_tor+0x118>
+    12f0:	f1402f73          	csrr	t5,mhartid
+    12f4:	00ff7f13          	andi	t5,t5,15
+    12f8:	000f1763          	bnez	t5,1306 <t_h1_chained_tor+0x106>
+    12fc:	0000ff97          	auipc	t6,0xf
+    1300:	d08f8f93          	addi	t6,t6,-760 # 10004 <h0_fail_count>
+    1304:	a029                	j	130e <t_h1_chained_tor+0x10e>
+    1306:	0000ff97          	auipc	t6,0xf
+    130a:	d06f8f93          	addi	t6,t6,-762 # 1000c <h1_fail_count>
+    130e:	000fae83          	lw	t4,0(t6)
+    1312:	0e85                	addi	t4,t4,1
+    1314:	01dfa023          	sw	t4,0(t6)
+    1318:	3a001073          	csrw	pmpcfg0,zero
+    131c:	3a101073          	csrw	pmpcfg1,zero
+    1320:	3a201073          	csrw	pmpcfg2,zero
+    1324:	3a301073          	csrw	pmpcfg3,zero
+    1328:	3b001073          	csrw	pmpaddr0,zero
+    132c:	3b101073          	csrw	pmpaddr1,zero
+    1330:	3b201073          	csrw	pmpaddr2,zero
+    1334:	3b301073          	csrw	pmpaddr3,zero
+    1338:	3b401073          	csrw	pmpaddr4,zero
+    133c:	3b501073          	csrw	pmpaddr5,zero
+    1340:	3b601073          	csrw	pmpaddr6,zero
+    1344:	3b701073          	csrw	pmpaddr7,zero
+    1348:	3b801073          	csrw	pmpaddr8,zero
+    134c:	3b901073          	csrw	pmpaddr9,zero
+    1350:	3ba01073          	csrw	pmpaddr10,zero
+    1354:	3bb01073          	csrw	pmpaddr11,zero
+    1358:	3bc01073          	csrw	pmpaddr12,zero
+    135c:	3bd01073          	csrw	pmpaddr13,zero
+    1360:	3be01073          	csrw	pmpaddr14,zero
+    1364:	3bf01073          	csrw	pmpaddr15,zero
+    1368:	0001                	nop
+    136a:	0001                	nop
+    136c:	0001                	nop
+    136e:	0001                	nop
+    1370:	0001                	nop
+    1372:	0001                	nop
+    1374:	0001                	nop
+    1376:	0001                	nop
+    1378:	8082                	ret
+
+0000137a <h0_report_and_finish>:
+    137a:	d05802b7          	lui	t0,0xd0580
+    137e:	04500313          	li	t1,69
+    1382:	00628023          	sb	t1,0(t0) # d0580000 <STACK+0xd0567f10>
+    1386:	0000f297          	auipc	t0,0xf
+    138a:	c7a28293          	addi	t0,t0,-902 # 10000 <h0_pass_count>
+    138e:	0002a483          	lw	s1,0(t0)
+    1392:	0000f297          	auipc	t0,0xf
+    1396:	c7628293          	addi	t0,t0,-906 # 10008 <h1_pass_count>
+    139a:	0002a303          	lw	t1,0(t0)
+    139e:	949a                	add	s1,s1,t1
+    13a0:	0000f297          	auipc	t0,0xf
+    13a4:	c6428293          	addi	t0,t0,-924 # 10004 <h0_fail_count>
+    13a8:	0002a903          	lw	s2,0(t0)
+    13ac:	0000f297          	auipc	t0,0xf
+    13b0:	c6028293          	addi	t0,t0,-928 # 1000c <h1_fail_count>
+    13b4:	0002a303          	lw	t1,0(t0)
+    13b8:	991a                	add	s2,s2,t1
+    13ba:	0000f297          	auipc	t0,0xf
+    13be:	d0628293          	addi	t0,t0,-762 # 100c0 <msg_banner>
+    13c2:	052000ef          	jal	1414 <print_str>
+    13c6:	0000f297          	auipc	t0,0xf
+    13ca:	d0e28293          	addi	t0,t0,-754 # 100d4 <msg_pass>
+    13ce:	046000ef          	jal	1414 <print_str>
+    13d2:	8526                	mv	a0,s1
+    13d4:	056000ef          	jal	142a <print_dec>
+    13d8:	0000f297          	auipc	t0,0xf
+    13dc:	d0428293          	addi	t0,t0,-764 # 100dc <msg_fail>
+    13e0:	034000ef          	jal	1414 <print_str>
+    13e4:	854a                	mv	a0,s2
+    13e6:	044000ef          	jal	142a <print_dec>
+    13ea:	0000f297          	auipc	t0,0xf
+    13ee:	cf928293          	addi	t0,t0,-775 # 100e3 <msg_nl>
+    13f2:	022000ef          	jal	1414 <print_str>
+    13f6:	00091963          	bnez	s2,1408 <test_fail>
+    13fa:	d05802b7          	lui	t0,0xd0580
+    13fe:	0ff00313          	li	t1,255
+    1402:	00628023          	sb	t1,0(t0) # d0580000 <STACK+0xd0567f10>
+    1406:	a001                	j	1406 <h0_report_and_finish+0x8c>
+
+00001408 <test_fail>:
+    1408:	d05802b7          	lui	t0,0xd0580
+    140c:	4305                	li	t1,1
+    140e:	00628023          	sb	t1,0(t0) # d0580000 <STACK+0xd0567f10>
+    1412:	a001                	j	1412 <test_fail+0xa>
+
+00001414 <print_str>:
+    1414:	d0580337          	lui	t1,0xd0580
+    1418:	0002c383          	lbu	t2,0(t0)
+    141c:	00038663          	beqz	t2,1428 <print_str+0x14>
+    1420:	00730023          	sb	t2,0(t1) # d0580000 <STACK+0xd0567f10>
+    1424:	0285                	addi	t0,t0,1
+    1426:	bfcd                	j	1418 <print_str+0x4>
+    1428:	8082                	ret
+
+0000142a <print_dec>:
+    142a:	d0580337          	lui	t1,0xd0580
+    142e:	43a9                	li	t2,10
+    1430:	00754a63          	blt	a0,t2,1444 <print_dec+0x1a>
+    1434:	02754e33          	div	t3,a0,t2
+    1438:	02756533          	rem	a0,a0,t2
+    143c:	030e0e13          	addi	t3,t3,48
+    1440:	01c30023          	sb	t3,0(t1) # d0580000 <STACK+0xd0567f10>
+    1444:	03050513          	addi	a0,a0,48
+    1448:	00a30023          	sb	a0,0(t1)
+    144c:	8082                	ret
+    144e:	00000013          	nop
+    1452:	00000013          	nop
+    1456:	00000013          	nop
+    145a:	00000013          	nop
+    145e:	00000013          	nop
+    1462:	00000013          	nop
+    1466:	00000013          	nop
+    146a:	00000013          	nop
+    146e:	00000013          	nop
+    1472:	00000013          	nop
+    1476:	00000013          	nop
+    147a:	00000013          	nop
+    147e:	0001                	nop
+
+00001480 <trap_entry>:
+    1480:	342022f3          	csrr	t0,mcause
+    1484:	34302373          	csrr	t1,mtval
+    1488:	341023f3          	csrr	t2,mepc
+    148c:	0000fe17          	auipc	t3,0xf
+    1490:	ba0e0e13          	addi	t3,t3,-1120 # 1002c <trap_cause_val>
+    1494:	005e2023          	sw	t0,0(t3)
+    1498:	0000fe17          	auipc	t3,0xf
+    149c:	b98e0e13          	addi	t3,t3,-1128 # 10030 <trap_mtval_val>
+    14a0:	006e2023          	sw	t1,0(t3)
+    14a4:	0000fe17          	auipc	t3,0xf
+    14a8:	b90e0e13          	addi	t3,t3,-1136 # 10034 <trap_epc_val>
+    14ac:	007e2023          	sw	t2,0(t3)
+    14b0:	0000fe17          	auipc	t3,0xf
+    14b4:	b68e0e13          	addi	t3,t3,-1176 # 10018 <expect_trap_flag>
+    14b8:	000e2e83          	lw	t4,0(t3)
+    14bc:	060e8e63          	beqz	t4,1538 <trap_unexpected>
+    14c0:	000e2023          	sw	zero,0(t3)
+    14c4:	0000fe17          	auipc	t3,0xf
+    14c8:	b58e0e13          	addi	t3,t3,-1192 # 1001c <expect_cause_val>
+    14cc:	000e2e83          	lw	t4,0(t3)
+    14d0:	03d29b63          	bne	t0,t4,1506 <trap_wrong_cause>
+    14d4:	f1402f73          	csrr	t5,mhartid
+    14d8:	00ff7f13          	andi	t5,t5,15
+    14dc:	000f1763          	bnez	t5,14ea <trap_h1_pass>
+    14e0:	0000ff97          	auipc	t6,0xf
+    14e4:	b20f8f93          	addi	t6,t6,-1248 # 10000 <h0_pass_count>
+    14e8:	a029                	j	14f2 <trap_inc_pass>
+
+000014ea <trap_h1_pass>:
+    14ea:	0000ff97          	auipc	t6,0xf
+    14ee:	b1ef8f93          	addi	t6,t6,-1250 # 10008 <h1_pass_count>
+
+000014f2 <trap_inc_pass>:
+    14f2:	000fae83          	lw	t4,0(t6)
+    14f6:	0e85                	addi	t4,t4,1
+    14f8:	01dfa023          	sw	t4,0(t6)
+    14fc:	0391                	addi	t2,t2,4
+    14fe:	34139073          	csrw	mepc,t2
+    1502:	30200073          	mret
+
+00001506 <trap_wrong_cause>:
+    1506:	f1402f73          	csrr	t5,mhartid
+    150a:	00ff7f13          	andi	t5,t5,15
+    150e:	000f1763          	bnez	t5,151c <trap_wc_h1>
+    1512:	0000ff97          	auipc	t6,0xf
+    1516:	af2f8f93          	addi	t6,t6,-1294 # 10004 <h0_fail_count>
+    151a:	a029                	j	1524 <trap_wc_inc>
+
+0000151c <trap_wc_h1>:
+    151c:	0000ff97          	auipc	t6,0xf
+    1520:	af0f8f93          	addi	t6,t6,-1296 # 1000c <h1_fail_count>
+
+00001524 <trap_wc_inc>:
+    1524:	000fae83          	lw	t4,0(t6)
+    1528:	0e85                	addi	t4,t4,1
+    152a:	01dfa023          	sw	t4,0(t6)
+    152e:	0391                	addi	t2,t2,4
+    1530:	34139073          	csrw	mepc,t2
+    1534:	30200073          	mret
+
+00001538 <trap_unexpected>:
+    1538:	f1402f73          	csrr	t5,mhartid
+    153c:	00ff7f13          	andi	t5,t5,15
+    1540:	000f1763          	bnez	t5,154e <trap_unx_h1>
+    1544:	0000ff97          	auipc	t6,0xf
+    1548:	ac0f8f93          	addi	t6,t6,-1344 # 10004 <h0_fail_count>
+    154c:	a029                	j	1556 <trap_unx_inc>
+
+0000154e <trap_unx_h1>:
+    154e:	0000ff97          	auipc	t6,0xf
+    1552:	abef8f93          	addi	t6,t6,-1346 # 1000c <h1_fail_count>
+
+00001556 <trap_unx_inc>:
+    1556:	000fae83          	lw	t4,0(t6)
+    155a:	0e85                	addi	t4,t4,1
+    155c:	01dfa023          	sw	t4,0(t6)
+    1560:	0391                	addi	t2,t2,4
+    1562:	34139073          	csrw	mepc,t2
+    1566:	30200073          	mret
+
+0000156a <fetch_island>:
+    156a:	00150513          	addi	a0,a0,1
+    156e:	00008067          	ret
+	...

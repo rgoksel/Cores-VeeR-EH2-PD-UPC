@@ -1,0 +1,41 @@
+
+There are no discarded input sections
+
+Memory Configuration
+
+Name             Origin             Length             Attributes
+*default*        0x00000000         0xffffffff
+
+Linker script and memory map
+
+LOAD /apps/riscv-gnu-toolchain/2024.10.28/lib/gcc/riscv64-unknown-elf/14.2.0/libgcc.a
+LOAD pmp_test.o
+LOAD /apps/riscv-gnu-toolchain/2024.10.28/lib/gcc/riscv64-unknown-elf/14.2.0/libgcc.a
+START GROUP
+LOAD /apps/riscv-gnu-toolchain/2024.10.28/lib/gcc/riscv64-unknown-elf/14.2.0/../../../../riscv64-unknown-elf/lib/libc.a
+LOAD /apps/riscv-gnu-toolchain/2024.10.28/lib/gcc/riscv64-unknown-elf/14.2.0/../../../../riscv64-unknown-elf/lib/libgloss.a
+END GROUP
+LOAD /apps/riscv-gnu-toolchain/2024.10.28/lib/gcc/riscv64-unknown-elf/14.2.0/libgcc.a
+                0x00000000                        . = 0x0
+
+.text           0x00000000     0x15a6
+ *(.text*)
+ .text          0x00000000     0x15a6 pmp_test.o
+                0x00000000                _start
+                0x000015a6                        _end = .
+                0x00010000                        . = 0x10000
+
+.data           0x00010000       0xe5
+ *(.*data)
+ .data          0x00010000       0xe5 pmp_test.o
+ *(.rodata*)
+                0x000180f0                        STACK = (ALIGN (0x10) + 0x8000)
+OUTPUT(pmp_test.exe elf32-littleriscv)
+
+.bss            0x000100e5        0x0
+ .bss           0x000100e5        0x0 pmp_test.o
+
+.riscv.attributes
+                0x00000000       0x52
+ .riscv.attributes
+                0x00000000       0x52 pmp_test.o
