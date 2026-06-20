@@ -19,7 +19,7 @@ CONF_PARAMS = -set=build_axi4
 
 TEST_CFLAGS = -g -O3 -funroll-all-loops 
 
-ABI = -mabi=ilp32 -march=rv32imac
+ABI = -mabi=ilp32 -march=rv32imac_zicsr
 
 
 
@@ -37,7 +37,7 @@ VEER_CONFIG = ${RV_ROOT}/configs/veer.config
 IRUN = xrun
 VCS = vcs
 VLOG = qverilog
-VERILATOR = verilator
+VERILATOR = verilator --no-timing -Wno-STMTDLY
 RIVIERA = riviera
 GCC_PREFIX = riscv64-unknown-elf
 BUILD_DIR = snapshots/${snapshot}
@@ -86,9 +86,9 @@ defines += ${RV_ROOT}/design/include/eh2_def.sv
 defines += $(BUILD_DIR)/eh2_pdef.vh
 includes = -I${BUILD_DIR}
 
-# CFLAGS for verilator generated Makefiles. Without -std=c++11 it
+# CFLAGS for verilator generated Makefiles. Without -std=c++14 it
 # complains for `auto` variables
-CFLAGS += "-std=c++11"
+CFLAGS += "-std=c++14"
 
 # Optimization for better performance; alternative is nothing for
 # slower runtime (faster compiles) -O2 for faster runtime (slower
@@ -116,7 +116,7 @@ verilator-build: ${TBFILES} ${BUILD_DIR}/defines.h test_tb_top.cpp
 	echo '`undef RV_ASSERT_ON' >> ${BUILD_DIR}/common_defines.vh
 	$(VERILATOR)  --cc -CFLAGS ${CFLAGS} $(defines) \
 	  $(includes) -I${RV_ROOT}/testbench -f ${RV_ROOT}/testbench/flist \
-	  -Wno-WIDTH -Wno-UNOPTFLAT -Wno-IMPLICIT ${TBFILES} --top-module tb_top \
+	  -Wno-WIDTH -Wno-UNOPTFLAT -Wno-IMPLICIT -Wno-STMTDLY ${TBFILES} --top-module tb_top \
 	  -exe test_tb_top.cpp --autoflush $(VERILATOR_DEBUG)
 	$(MAKE) -j -C obj_dir -f Vtb_top.mk $(VERILATOR_MAKE_FLAGS)
 	touch verilator-build

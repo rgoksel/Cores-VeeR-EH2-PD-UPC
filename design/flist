@@ -4,6 +4,7 @@ $RV_ROOT/design/eh2_mem.sv
 $RV_ROOT/design/eh2_pic_ctrl.sv
 $RV_ROOT/design/eh2_veer.sv
 $RV_ROOT/design/eh2_dma_ctrl.sv
+$RV_ROOT/design/pmp/rtl/eh2_pmp.sv
 $RV_ROOT/design/ifu/eh2_ifu_aln_ctl.sv
 $RV_ROOT/design/ifu/eh2_ifu_compress_ctl.sv
 $RV_ROOT/design/ifu/eh2_ifu_ifc_ctl.sv

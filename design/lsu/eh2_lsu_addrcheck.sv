@@ -43,6 +43,12 @@ import eh2_pkg::*;
 
    input logic [31:0]  dec_tlu_mrac_ff,           // CSR read
 
+   /////////////////////pmp
+   input logic [7:0]  tlu_pmp_pmpcfg  [pt.PMP_ENTRIES],
+   input logic [29:0] tlu_pmp_pmpaddr [pt.PMP_ENTRIES],
+
+   //////////////////////
+
    output logic        is_sideeffects_dc2,          // is sideffects space
    output logic        is_sideeffects_dc3,
    output logic        addr_in_dccm_region_dc1,     // address in dccm region
@@ -83,6 +89,9 @@ import eh2_pkg::*;
    logic [3:0]  access_fault_mscause_dc2;
    logic [3:0]  misaligned_fault_mscause_dc2;
    logic        non_dccm_access_ok;
+
+   logic        pmp_access_fault_dc2;
+   logic [2:0]  pmp_access_size_dc2;
 
    if (pt.DCCM_ENABLE == 1) begin: Gen_dccm_enable
       // Start address check
@@ -196,8 +205,29 @@ import eh2_pkg::*;
       assign mpu_access_fault_dc2      = (~start_addr_in_pic_region_dc2 & ~start_addr_in_dccm_region_dc2 & ~non_dccm_access_ok);   // 3. Address is not in a populated non-dccm region
    end
 
-   assign access_fault_dc2 = (unmapped_access_fault_dc2 | mpu_access_fault_dc2 | picm_access_fault_dc2 |
-                              regpred_access_fault_dc2 | amo_access_fault_dc2) & lsu_pkt_dc2.valid & ~lsu_pkt_dc2.dma;
+   assign pmp_access_size_dc2 = lsu_pkt_dc2.word ? 3'd2 :
+                               lsu_pkt_dc2.half ? 3'd1 : 3'd0;
+
+   eh2_pmp #(
+      .NUM_ENTRIES (pt.PMP_ENTRIES),
+      .PADDR_WIDTH (32),
+      .G           (0)
+   ) u_pmp_lsu (
+      .pmpcfg      (tlu_pmp_pmpcfg),
+      .pmpaddr     (tlu_pmp_pmpaddr),
+      .addr        (start_addr_dc2),
+      .access_size (pmp_access_size_dc2),
+      .access_type (lsu_pkt_dc2.store ? 2'b10 : 2'b01),      // STORE/LOAD
+      .priv_mode   (2'b11),   // M-only core
+      .allow       (),
+      .fault       (pmp_access_fault_dc2),
+      .fault_cause ()
+  );
+
+   assign access_fault_dc2 = (unmapped_access_fault_dc2 | mpu_access_fault_dc2 |
+                              picm_access_fault_dc2 | regpred_access_fault_dc2 |
+                              amo_access_fault_dc2 | pmp_access_fault_dc2)
+                           &  lsu_pkt_dc2.valid & ~lsu_pkt_dc2.dma;
    assign access_fault_mscause_dc2[3:0] = unmapped_access_fault_dc2 ? 4'h2 : mpu_access_fault_dc2 ? 4'h3 : regpred_access_fault_dc2 ? 4'h5 : picm_access_fault_dc2 ? 4'h6 : amo_access_fault_dc2 ? 4'h7 : 4'h0;
 
    // Misaligned happens due to 2 reasons (Atomic instructions (LR/SC/AMO) will never take misaligned as per spec)

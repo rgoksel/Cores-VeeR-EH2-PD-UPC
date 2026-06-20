@@ -113,7 +113,7 @@ typedef struct packed {
                        logic bank;
                        logic way;
                        logic middle;
-                       logic tid;
+                       logic tid;//AAAAAAA
                        } eh2_br_tlu_pkt_t;
 
 typedef struct packed {// data bits - upper 19b not likely to change
@@ -296,6 +296,7 @@ typedef struct packed {
                       logic exc_type;    //0: MisAligned, 1: Access Fault
                       logic [3:0] mscause;
                       logic [31:0] addr;
+                      logic pmp_fault; //AAAAAAA
                       } eh2_lsu_error_pkt_t;
 
 typedef struct packed {
@@ -590,8 +591,18 @@ typedef struct packed {
                        logic postsync;
                        logic glob;
                        logic legal;
+                       //AAAAAAA
+                       logic csr_pmp;
                        } eh2_csr_tlu_pkt_t;
 
 
-endpackage // eh2_pkg
+//AAAAAAA
+// error
+typedef struct packed {
+           logic       pmp_exc_valid;    // PMP fault
+           logic [1:0] pmp_exc_type;     // 00=FETCH, 01=LOAD, 10=STORE
+           logic [31:0] pmp_exc_addr;    // err addr
+       } eh2_pmp_error_pkt_t;
+
+endpackage
 //`endif

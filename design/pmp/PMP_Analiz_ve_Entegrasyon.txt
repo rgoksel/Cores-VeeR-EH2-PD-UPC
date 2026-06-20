@@ -1,0 +1,641 @@
+================================================================================
+  RISC-V PMP (Physical Memory Protection) - Spec Analizi & VeeR-EH2 Entegrasyon
+  Kaynak Spec: riscv-privileged-71-76 (1).txt  (Volume II, §3.7.1 - §3.7.2)
+================================================================================
+
+1) rv32 icin rv 64 de mi desteklememli mi?
+
+════════════════════════════════════════════════════════════════════════════════
+BÖLÜM 1: PMP MODÜLÜNDE OLMASI GEREKEN ÖZELLİKLER (SPEC §3.7.1 - §3.7.2)
+════════════════════════════════════════════════════════════════════════════════
+
+1.1  CSR KAYITLARI - pmpcfg (Konfigürasyon Kayıtları)
+──────────────────────────────────────────────────────
+• RV32 için:
+  - pmpcfg0 – pmpcfg15 arası 16 adet CSR (adresler 0x3A0 – 0x3AF)
+  - Her CSR 32-bit; 4 adet 8-bitlik pmpXcfg barındırır.
+  - Toplam 64 PMP entry desteklenir (pmp0cfg … pmp63cfg).
+
+• RV64 için:
+  - Yalnızca çift numaralı CSR'lar geçerlidir: pmpcfg0, pmpcfg2, pmpcfg4, …, pmpcfg14.
+  - Tek numaralı CSR'lar (pmpcfg1, pmpcfg3 …) ILLEGAL; bunlara erişim illegal-instruction
+    exception üretir.
+  - Her 64-bit CSR, 8 adet 8-bitlik pmpXcfg barındırır.
+
+• Tüm pmpcfg CSR'ları WARL (Write-Any-Read-Legal) alanlarıdır.
+• Sadece M-mode erişebilir; S/U-mode erişimi illegal-instruction exception verir.
+• Tüm alanlar read-only zero olabilir (implement edilmeyebilir).
+
+1.2  CSR KAYITLARI - pmpaddr (Adres Kayıtları)
+───────────────────────────────────────────────
+• pmpaddr0 – pmpaddr63 (adresler 0x3B0 – 0x3EF), 64 entry için.
+• RV32: Her register, 34-bit fiziksel adresin [33:2] bitlerini kodlar (32-bit CSR).
+  - Yani gerçek adres = {pmpaddr, 2'b00}
+• RV64: Her register, 56-bit fiziksel adresin [55:2] bitlerini kodlar; üst 10-bit WARL sıfır.
+  - Gerçek adres = {pmpaddr[53:0], 2'b00}
+• pmpaddr kayıtları WARL'dir; implementasyona göre bazı bitler sıfır kalabilir.
+• Sadece M-mode erişebilir.
+
+1.3  pmpXcfg KAYIT BIT ALANLARI (8-bit, Her Entry İçin)
+─────────────────────────────────────────────────────────
+  Bit[7]   = L  : Lock (WARL)
+  Bit[6:5] = 00 : Rezerve (WARL, her zaman 0 okunmalı)
+  Bit[4:3] = A  : Address Matching Mode (WARL)
+  Bit[2]   = X  : Execute permission (WARL)
+  Bit[1]   = W  : Write permission (WARL)
+  Bit[0]   = R  : Read permission (WARL)
+
+  ÖNEMLİ KURAL: R=0, W=1 kombinasyonu RESERVED'dir; yazılmamalı veya WARL ile engellenmeli.
+  R, W, X birlikte "collective WARL field" oluştururlar.
+
+1.4  ADDRESS MATCHING MODLARI (A alanı)
+────────────────────────────────────────
+  A=2'b00 → OFF   : Entry devre dışı, hiçbir adrese eşleşmez.
+  A=2'b01 → TOR   : Top Of Range - üst sınır modeli.
+    * Entry i için eşleşme: pmpaddr[i-1] ≤ addr < pmpaddr[i]  (adresler sol-kapalı)
+    * Entry 0 için alt sınır = 0.
+    * pmpaddr[i-1] ≥ pmpaddr[i] ise Entry i hiçbir adrese eşleşmez.
+    * pmpaddr[i] TOR modunda {pmpaddr, 2'b00} şeklinde 4-byte granüle genişletilir.
+  A=2'b10 → NA4   : Naturally Aligned 4-byte region.
+    * Tam olarak 4-byte; addr[33:2] == pmpaddr eşleşmesi.
+  A=2'b11 → NAPOT : Naturally Aligned Power-Of-Two, minimum 8 byte.
+    * pmpaddr'ın trailing-1 bitleri boyutu belirler (bkz. Tablo 3.11, spec).
+    * Örnek: pmpaddr = yyyy...yyy0 → 8-byte; yyyy...yy01 → 16-byte; vb.
+    * Tüm-1 pmpaddr: 2^(XLEN+3) byte (tüm adres alanı).
+
+1.5  GRANÜLARİTE (G Parametresi)
+─────────────────────────────────
+• PMP granülaritesi = 2^(G+2) byte; G = 0 → 4-byte (minimum).
+• G değeri tüm PMP bölgeleri için aynı olmalıdır.
+• G ≥ 1 ise NA4 modu SEÇİLEMEZ.
+• G ≥ 2 ve pmpcfg.A[1]=1 (NAPOT) ise pmpaddr[G-2:0] bitleri hep 1 okunur.
+• G ≥ 1 ve pmpcfg.A[1]=0 (OFF veya TOR) ise pmpaddr[G-1:0] bitleri hep 0 okunur.
+• Bu kurallar sadece CSR okuma davranışını etkiler; altta yatan depo değişmez.
+• Yazılım, G'yi bulmak için: pmp0cfg=0 yap, pmpaddr0'ı tüm-1 yaz, pmpaddr0'ı geri oku;
+  en düşük set bit indeksi = G.
+
+1.6  KİLİT (LOCK) MEKANİZMASI
+────────────────────────────────
+• L=1: Konfigürasyon ve adres yazmaları yoksayılır (hart reset'e kadar kalıcı).
+• L=1 ve pmpcfg.A=TOR ise bir önceki entry'nin pmpaddr yazması da engellenir.
+• L=1 olsa bile A=OFF olabilir; kilit sadece OFF modunda da geçerlidir.
+• Önemli: L=1 iken M-mode erişimleri de R/W/X bitlerine göre kısıtlanır.
+  L=0 iken eşleşen M-mode erişimleri HER ZAMAN başarılıdır (R/W/X'e bakılmaz).
+
+1.7  ÖNCELİK (PRIORITY) VE EŞLEŞİM MANTIĞI
+─────────────────────────────────────────────
+• Öncelik STATIK: En düşük numaralı entry en yüksek önceliktedir.
+• Bir erişimin HERHANGİ bir byte'ına eşleşen en düşük numaralı entry belirleyicidir.
+• Eşleşen entry erişimin TÜM byte'larını kapsamıyorsa erişim BAŞARISIZDIR
+  (L, R, W, X'e bakılmaksızın).
+• M-mode erişim + eşleşen entry + L=0 → erişim BAŞARILIDIR.
+• M-mode erişim + eşleşen entry + L=1 → R/W/X'e göre karar verilir.
+• S/U-mode erişim + eşleşen entry → R/W/X'e göre karar verilir.
+• HİÇBİR entry eşleşmiyorsa:
+  - M-mode → BAŞARILI.
+  - S/U-mode (en az 1 entry implement edilmişse) → BAŞARISIZ.
+• En az 1 entry implement edilmiş ama hepsi A=OFF ise → S/U-mode tüm erişimler BAŞARISIZ.
+
+1.8  EXCEPTION TÜRÜ VE KODU
+─────────────────────────────
+• Instruction fetch → PMP fault → Instruction Access-Fault (mcause = 5'h01)
+• Load / Load-Reserved → PMP fault → Load Access-Fault (mcause = 5'h05)
+• Store / Store-Conditional / AMO → PMP fault → Store/AMO Access-Fault (mcause = 5'h07)
+• Bir instruction birden fazla erişim üretebilir (sanal bellek, misaligned).
+  Herhangi biri başarısızsa exception oluşur; diğerleri yine de görünür side-effect
+  bırakmış olabilir.
+
+1.9  SAYFALAMA (PAGING) İLE BİRLİKTE ÇALIŞMA (§3.7.2)
+────────────────────────────────────────────────────────
+• Sayfalama aktifken PMP kontrolleri fiziksel adres seviyesinde, sanal bellek çevirisinden
+  SONRA uygulanır.
+• Page-table walk'lar da PMP'ye tabidir; bu erişimler için etkin ayrıcalık = S-mode.
+• PMP ayarları değiştirilince M-mode yazılımı SFENCE.VMA (rs1=x0, rs2=x0) çalıştırmalıdır.
+• Sayfalama yoksa PMP kontrolleri senkron gerçekleşir; SFENCE.VMA gerekmez.
+
+1.10 UYGULAMA SAYISI KISITI
+────────────────────────────
+• Geçerli PMP entry sayıları: 0, 16 veya 64.
+• En düşük numaralı entry'ler önce implement edilmek zorundadır.
+• 0 entry implement edilebilir (hiç PMP mekanizması yok); bu durumda pmpcfg/pmpaddr
+  read-only sıfır döner.
+
+
+════════════════════════════════════════════════════════════════════════════════
+BÖLÜM 2: VeeR-EH2 CORE'UNA ENTEGRASYONDA YAPILMASI GEREKENLER (ADIM ADIM)
+════════════════════════════════════════════════════════════════════════════════
+
+NOT: Tüm adımlar RTL kaynak dosyaları incelenerek doğrulanmıştır. Zaten mevcut
+olan yapılar (★ MEVCUT) olarak işaretlenmiştir; bunlara dokunma.
+
+──────────────────────────────────────────────────────────────────────────────
+ADIM 1: snapshots/default_mt/eh2_pdef.vh  →  PMP_ENTRIES STRUCT ALANI
+──────────────────────────────────────────────────────────────────────────────
+eh2_param_t struct tipi, veer.config tarafından üretilen eh2_pdef.vh dosyasında
+tanımlıdır (eh2_def.sv değil). Struct'ın kapanış parantezinden önce ekle:
+
+    bit [6:0]  PMP_ENTRIES;   // Geçerli değerler: 0, 16, 64
+
+★ MEVCUT: eh2_def.sv satır 596-600'de eh2_pmp_error_pkt_t struct'ı zaten tanımlı.
+  Tekrar ekleme.
+
+──────────────────────────────────────────────────────────────────────────────
+ADIM 2: snapshots/default_mt/eh2_param.vh  →  PMP_ENTRIES DEĞERİ
+──────────────────────────────────────────────────────────────────────────────
+Adım 1 ile birlikte, pt = '{ ... } literal'ine değer ekle (alfabetik sıraya uy):
+
+    PMP_ENTRIES            : 7'h10         ,   // 16 entry (0 veya 64 da geçerli)
+
+──────────────────────────────────────────────────────────────────────────────
+ADIM 3: design/flist  →  PMP MODÜLÜNÜ DOSYA LİSTESİNE EKLE
+──────────────────────────────────────────────────────────────────────────────
+design/flist dosyasına şu satırı ekle (diğer design/ satırları ile birlikte):
+
+    $RV_ROOT/design/pmp/rtl/eh2_pmp.sv
+
+──────────────────────────────────────────────────────────────────────────────
+ADIM 4: eh2_dec_csr.sv  →  PMP CSR ADRES DECODE (DOĞRUDAN DÜZENLE)
+──────────────────────────────────────────────────────────────────────────────
+ÖNEMLİ: coredecode veya espresso araçlarına GEREK YOKTUR. Tüm denklemler
+eh2_dec_csr.sv içinde zaten inlined haldedir (satır 61'den itibaren). Yeni
+CSR'lar bu bloğu doğrudan genişleterek eklenir.
+
+a) "// insert csrequations here" bloğunun altına yeni logic sinyalleri ekle:
+     logic csr_pmpcfg0, csr_pmpcfg1, csr_pmpcfg2, csr_pmpcfg3;
+     logic csr_pmpaddr0,  csr_pmpaddr1,  csr_pmpaddr2,  csr_pmpaddr3;
+     logic csr_pmpaddr4,  csr_pmpaddr5,  csr_pmpaddr6,  csr_pmpaddr7;
+     logic csr_pmpaddr8,  csr_pmpaddr9,  csr_pmpaddr10, csr_pmpaddr11;
+     logic csr_pmpaddr12, csr_pmpaddr13, csr_pmpaddr14, csr_pmpaddr15;
+
+b) Adres decode assign'larını ekle:
+     assign csr_pmpcfg0   = (dec_csr_rdaddr_d == 12'h3A0);
+     assign csr_pmpcfg1   = (dec_csr_rdaddr_d == 12'h3A1);
+     assign csr_pmpcfg2   = (dec_csr_rdaddr_d == 12'h3A2);
+     assign csr_pmpcfg3   = (dec_csr_rdaddr_d == 12'h3A3);
+     assign csr_pmpaddr0  = (dec_csr_rdaddr_d == 12'h3B0);
+     assign csr_pmpaddr1  = (dec_csr_rdaddr_d == 12'h3B1);
+     ... (0x3B2 – 0x3BF için devam et)
+     assign csr_pmpaddr15 = (dec_csr_rdaddr_d == 12'h3BF);
+
+c) legal denklemine ("// insert csrlegal_equation here" bloğu ~satır 414) OR ekle:
+     assign legal = <mevcut espresso ifadesi>
+         | (dec_csr_rdaddr_d[11:4] == 8'h3A)   // 0x3A0-0x3AF pmpcfg
+         | (dec_csr_rdaddr_d[11:4] == 8'h3B);  // 0x3B0-0x3BF pmpaddr
+
+d) postsync denklemine (~satır 388) PMP CSR'ları ekle.
+   PMP ayarları değişince pipeline tamamen boşaltılmalı (spec §3.7.2):
+     assign postsync = <mevcut ifade>
+         | csr_pmpcfg0 | csr_pmpcfg1 | csr_pmpcfg2 | csr_pmpcfg3
+         | csr_pmpaddr0 | csr_pmpaddr1 | ... | csr_pmpaddr15;
+
+e) eh2_dec_csr.sv'nin alt kısmı (satır 545+), her CSR sinyalini tlu_csr_pkt_d struct'ına
+   paketler; TLU bu flag'leri csr_rddata_d read mux'ında kullanır. PMP için
+   20 CSR (4 pmpcfg + 16 pmpaddr) olduğundan bunları struct'a ayrı ayrı field
+   olarak eklemek (csr_pmpcfg0 vb.) struct'ı gereksiz şişirir.
+   Önerilen yaklaşım: tlu_csr_pkt_d'ye tek bir grup flag ekle:
+       eh2_def.sv  → eh2_csr_tlu_pkt_t'ye  "logic csr_pmp;" ekle
+       eh2_dec_csr.sv'ye assign tlu_csr_pkt_d.csr_pmp = csr_pmpcfg0 | csr_pmpcfg1 |
+                                csr_pmpcfg2 | csr_pmpcfg3 | csr_pmpaddr0 | ... | csr_pmpaddr15;
+   TLU'da (Adım 5d) read mux'ında hangi adresi okuyacağını bulmak için
+   zaten mevcut olan dec_i0_csr_rdaddr_d[11:0] portu (satır 113) kullanılır:
+       ({32{csr_rd.csr_pmp && dec_i0_csr_rdaddr_d[11:4]==8'h3B}} &
+            pmpaddr_reg[dec_i0_csr_rdaddr_d[3:0]])             // pmpaddr0-15
+       ({32{csr_rd.csr_pmp && dec_i0_csr_rdaddr_d[11:2]==10'h0E8}} &
+            {pmpcfg_reg[{dec_i0_csr_rdaddr_d[1:0],2'b11}],     // pmpcfg packed
+             pmpcfg_reg[{dec_i0_csr_rdaddr_d[1:0],2'b10}],
+             pmpcfg_reg[{dec_i0_csr_rdaddr_d[1:0],2'b01}],
+             pmpcfg_reg[{dec_i0_csr_rdaddr_d[1:0],2'b00}]}) //TODO:???
+
+──────────────────────────────────────────────────────────────────────────────
+ADIM 5: eh2_dec_tlu_ctl.sv  →  PMP CSR KAYITLARI, LOCK MANTIĞI, ÇIKIŞLAR
+──────────────────────────────────────────────────────────────────────────────
+★ MEVCUT (DOKUNMA): Exception cause kodları 5'h01, 5'h05, 5'h07 satır 1016-1021'de
+  zaten inst_acc_e4 ve lsu_exc_acc_dc4 üzerinden BAĞLIDIR. Dokunma.
+
+┌── 5a. PORT TANIMLARI ──────────────────────────────────────────────────────┐
+  Dosya: eh2_dec_tlu_ctl.sv  →  modül port listesi (~satır 110-260 arası)
+  Dosya: eh2_dec_tlu_top.sv  →  aynı portlar tekrar eklenecek (pass-through)
+
+  // Çıkışlar (output):
+  output logic [7:0]  tlu_pmp_pmpcfg  [pt.PMP_ENTRIES],
+  output logic [31:0] tlu_pmp_pmpaddr [pt.PMP_ENTRIES]
+└────────────────────────────────────────────────────────────────────────────┘
+
+┌── 5b. LOCAL SİNYAL TANIMLARI ─────────────────────────────────────────────┐
+  Dosya: eh2_dec_tlu_ctl.sv  →  satır 320-410 arası (diğer "logic" tanımları
+         ile birlikte, örneğin satır 328'deki "logic [4:0] exc_cause_e4..." bloğu)
+
+  logic [7:0]  pmpcfg_reg  [0:pt.PMP_ENTRIES-1];   // 8-bit config/entry
+  logic [31:0] pmpaddr_reg [0:pt.PMP_ENTRIES-1];   // 32-bit adres/entry
+  logic        wr_pmpcfg_wb;    // herhangi bir pmpcfg CSR'ına yazma
+  logic        wr_pmpaddr_wb;   // herhangi bir pmpaddr CSR'ına yazma
+  logic [1:0]  wr_pmpcfg_csr;  // hangi pmpcfg CSR'ı (0-3 → pmpcfg0-3)
+  logic [3:0]  wr_pmpaddr_idx; // hangi pmpaddr CSR'ı (0-15)
+└────────────────────────────────────────────────────────────────────────────┘
+
+┌── 5c. CSR WRITE LOGİK ─────────────────────────────────────────────────────┐
+  Dosya: eh2_dec_tlu_ctl.sv  →  satır 2350 civarına (endmodule'dan hemen önce)
+         aşağıdaki bloğu olduğu gibi ekle.
+
+  Mantık özeti:
+  • pmpcfg0 (0x3A0) → entry 0,1,2,3'ün 8-bit config byte'larını tutar
+  • pmpcfg1 (0x3A1) → entry 4,5,6,7  |  pmpcfg2 → 8-11  |  pmpcfg3 → 12-15
+  • Yazılan 32-bit değerin hangi byte'ı hangi entry'e gider:
+      entry i'nin byte'ı = dec_i0_csr_wrdata_wb[(i%4)*8 +: 8]
+  • Hangi pmpcfg CSR'ına yazıldığını dec_i0_csr_wraddr_wb[1:0] verir (0-3)
+  • entry i, pmpcfg CSR (i/4)'e aittir → bit select: pmp_i[3:2]
+  • L=1 ise o entry'ye yazma yoksayılır.
+  • TOR kuralı: entry[i+1].L=1 ve entry[i+1].A=TOR ise pmpaddr[i]'ye de yazma yok.
+
+  ─── BURAYA EKLE (satır 2350 civarı, endmodule satırından önce) ───────────
+
+  // =========================================================================
+  // PMP CSR WRITE LOGIC
+  // =========================================================================
+  localparam logic [11:0] PMPCFG_BASE  = 12'h3A0;
+  localparam logic [11:0] PMPADDR_BASE = 12'h3B0;
+
+  // Herhangi bir pmpcfg veya pmpaddr CSR'ına yazma olduğunu tespit et
+  assign wr_pmpcfg_wb  = dec_i0_csr_wen_wb_mod
+                       & (dec_i0_csr_wraddr_wb[11:2] == PMPCFG_BASE[11:2]);
+  assign wr_pmpaddr_wb = dec_i0_csr_wen_wb_mod
+                       & (dec_i0_csr_wraddr_wb[11:4] == PMPADDR_BASE[11:4]);
+
+  genvar pmp_i;
+  generate
+  for (pmp_i = 0; pmp_i < pt.PMP_ENTRIES; pmp_i++) begin : gen_pmp_regs
+
+    // ── pmpcfg_reg[pmp_i] ────────────────────────────────────────────────
+    //
+    // pmp_i[3:2] = pmp_i/4 → hangi pmpcfg CSR'ı (0,1,2,3)
+    // pmp_i[1:0] = pmp_i%4 → o CSR içinde kaçıncı byte (0,1,2,3)
+    //
+    // Örnek: entry 5 → pmp_i[3:2]=1 (pmpcfg1), pmp_i[1:0]=1 (2.byte, [15:8])
+    //
+    // Yazma enable koşulu:
+    //   1) herhangi bir pmpcfg yazması (wr_pmpcfg_wb)
+    //   2) yazılan CSR adresi bu entry'nin CSR'ı (dec_i0_csr_wraddr_wb[1:0] == pmp_i[3:2])
+    //   3) L biti SET DEĞİL (pmpcfg_reg[pmp_i][7] == 0)
+
+    logic wr_en_cfg;
+    assign wr_en_cfg = wr_pmpcfg_wb
+                     & (dec_i0_csr_wraddr_wb[1:0] == 2'(pmp_i >> 2))
+                     & ~pmpcfg_reg[pmp_i][7];
+
+    // din: yazılan byte'tan bit[7](L), bit[6:5]→daima 0 (WARL), bit[4:0](A,X,W,R)
+    // pmp_i[1:0]*8 = byte başlangıç biti; bu generate context'te derleme zamanı sabitidir.
+    rvdffe #(8) pmpcfg_ff (
+      .*,
+      .en  (wr_en_cfg),
+      .din ({dec_i0_csr_wrdata_wb[pmp_i[1:0]*8 + 7],   // bit[7]: L
+             2'b00,                                       // bit[6:5]: rezerve, daima 0
+             dec_i0_csr_wrdata_wb[pmp_i[1:0]*8 + 4],   // bit[4]: A[1]
+             dec_i0_csr_wrdata_wb[pmp_i[1:0]*8 + 3],   // bit[3]: A[0]
+             dec_i0_csr_wrdata_wb[pmp_i[1:0]*8 + 2],   // bit[2]: X
+             dec_i0_csr_wrdata_wb[pmp_i[1:0]*8 + 1],   // bit[1]: W
+             dec_i0_csr_wrdata_wb[pmp_i[1:0]*8 + 0]}), // bit[0]: R
+      .dout(pmpcfg_reg[pmp_i])
+    );
+
+    // ── pmpaddr_reg[pmp_i] ───────────────────────────────────────────────
+    //
+    // Yazma enable koşulları:
+    //   1) herhangi bir pmpaddr yazması (wr_pmpaddr_wb)
+    //   2) yazılan CSR adresi bu entry (dec_i0_csr_wraddr_wb[3:0] == pmp_i)
+    //   3) BU entry'nin L biti SET DEĞİL
+    //   4) TOR kilidi yok: entry[pmp_i+1].L=1 ve entry[pmp_i+1].A=TOR ise
+    //      spec gereği pmpaddr[pmp_i]'ye de yazma yoksayılır.
+
+    logic tor_lock;
+    if (pmp_i < pt.PMP_ENTRIES - 1) begin : gen_tor
+      // Bir sonraki entry kilitli ve TOR modundaysa bu pmpaddr yazmayı blokla
+      assign tor_lock = pmpcfg_reg[pmp_i+1][7]               // L bit
+                      & (pmpcfg_reg[pmp_i+1][4:3] == 2'b01); // A=TOR
+    end else begin : gen_tor_last
+      assign tor_lock = 1'b0;  // son entry'nin üstünde entry yok
+    end
+
+    logic wr_en_addr;
+    assign wr_en_addr = wr_pmpaddr_wb
+                      & (dec_i0_csr_wraddr_wb[3:0] == 4'(pmp_i))
+                      & ~pmpcfg_reg[pmp_i][7]   // bu entry'nin L biti
+                      & ~tor_lock;
+
+    rvdffe #(32) pmpaddr_ff (
+      .*,
+      .en  (wr_en_addr),
+      .din (dec_i0_csr_wrdata_wb[31:0]),
+      .dout(pmpaddr_reg[pmp_i])
+    );
+
+  end // for
+  endgenerate
+  // =========================================================================
+
+└────────────────────────────────────────────────────────────────────────────┘
+
+┌── 5d. CSR READ LOGİK ──────────────────────────────────────────────────────┐
+  Dosya: eh2_dec_tlu_ctl.sv  →  satır 2346 (son "|" den sonra, ")" kapanış
+         parantezinden HEMEN ÖNCE) aşağıdaki iki satırı ekle.
+
+  Mevcut bloğun sonu şu şekilde görünür (satır 2346):
+    ...
+                                 ({32{dec_timer_read_d}} & dec_timer_rddata_d[31:0])
+                                 );   // ← bu parantezden önce ekle
+
+  EKLENECEK (bu iki satırı son "|" ve ")" arasına yerleştir):
+
+  // pmpcfg okuma
+  // Adres 0x3A0-0x3A3 → dec_i0_csr_rdaddr_d[11:2] == 10'h0E8
+  // dec_i0_csr_rdaddr_d[1:0] hangi pmpcfg CSR'ını seçer (0=pmpcfg0 .. 3=pmpcfg3)
+  // Spec: pmpcfg0[7:0]=entry0, [15:8]=entry1, [23:16]=entry2, [31:24]=entry3
+  //       pmpcfg1[7:0]=entry4, [15:8]=entry5, ... (little-endian byte sırası)
+  // {dec_i0_csr_rdaddr_d[1:0], 2'bXX} ile entry indexi hesaplanır:
+  //   rdaddr[1:0]=0 → entry 0,1,2,3  |  =1 → entry 4,5,6,7  vb.
+                               | ({32{csr_rd.csr_pmp & (dec_i0_csr_rdaddr_d[11:2] == 10'h0E8)}} &
+                                   {pmpcfg_reg[{dec_i0_csr_rdaddr_d[1:0], 2'b11}],
+                                    pmpcfg_reg[{dec_i0_csr_rdaddr_d[1:0], 2'b10}],
+                                    pmpcfg_reg[{dec_i0_csr_rdaddr_d[1:0], 2'b01}],
+                                    pmpcfg_reg[{dec_i0_csr_rdaddr_d[1:0], 2'b00}]})
+
+  // pmpaddr okuma
+  // Adres 0x3B0-0x3BF → dec_i0_csr_rdaddr_d[11:4] == 8'h3B
+  // dec_i0_csr_rdaddr_d[3:0] hangi pmpaddr CSR'ını seçer (0=pmpaddr0 .. 15=pmpaddr15)
+                               | ({32{csr_rd.csr_pmp & (dec_i0_csr_rdaddr_d[11:4] == 8'h3B)}} &
+                                   pmpaddr_reg[dec_i0_csr_rdaddr_d[3:0]])
+
+  Not: 10'h0E8 neden? → 0x3A0 >> 2 = 0xE8 = 10'h0E8 (adresin üst 10 biti).
+└────────────────────────────────────────────────────────────────────────────┘
+
+┌── 5e. OUTPUT ATAMASI ──────────────────────────────────────────────────────┐
+  Dosya: eh2_dec_tlu_ctl.sv  →  satır 2355 civarı, endmodule satırından önce
+
+  assign tlu_pmp_pmpcfg  = pmpcfg_reg;
+  assign tlu_pmp_pmpaddr = pmpaddr_reg;
+└────────────────────────────────────────────────────────────────────────────┘
+
+──────────────────────────────────────────────────────────────────────────────
+ADIM 6: eh2_ifu_ifc_ctl.sv  →  FETCH PMP KONTROLÜ
+──────────────────────────────────────────────────────────────────────────────
+DOĞRU HOOK: region_acc_fault_f1 (satır 81 output, satır 375/397 assign).
+YANLIŞ   : ifu_ic_error_start — icache ECC hatasıdır, PMP ile ilgisi yok.
+
+Sinyal zinciri (dokunma, bu yol üzerinden çalışır):
+  region_acc_fault_f1 (ifc_ctl satır 375/397)
+  → ifc_region_acc_fault_f1 (ifu.sv satır 469)
+  → ifc_region_acc_fault_f2 (ifu_mem_ctl.sv satır 519)
+  → ic_access_fault_f2      (ifu_mem_ctl.sv satır 681)
+  → alignicaf               (ifu_aln_ctl.sv satır 694)
+  → i0_icaf                 (ifu_aln_ctl.sv satır 801)
+  → ifu_i0_icaf             (ifu.sv satır 572)
+  → tlu_packet_e4.i0icaf    (dec_tlu_ctl.sv satır 967)
+  → inst_acc_e4             (satır 968) → mcause = 5'h01 (satır 1016)
+
+┌── 6a. PORT EKLE ───────────────────────────────────────────────────────────┐
+  Dosya: eh2_ifu_ifc_ctl.sv  →  satır 70-100 arası port listesi
+
+  input logic [7:0]  tlu_pmp_pmpcfg  [pt.PMP_ENTRIES],
+  input logic [31:0] tlu_pmp_pmpaddr [pt.PMP_ENTRIES]
+└────────────────────────────────────────────────────────────────────────────┘
+
+┌── 6b. LOCAL SİNYAL EKLE ───────────────────────────────────────────────────┐
+  Dosya: eh2_ifu_ifc_ctl.sv  →  satır 110-130 arası logic tanımları
+
+  logic pmp_fetch_fault;
+└────────────────────────────────────────────────────────────────────────────┘
+
+┌── 6c. eh2_pmp INSTANCE ────────────────────────────────────────────────────┐
+  Dosya: eh2_ifu_ifc_ctl.sv  →  satır 362 `if (pt.ICCM_ENABLE==1)` bloğunun
+         başına (ve else bloğunun başına da ayrıca) ekle.
+
+  // Fetch adresi: ifc_fetch_addr_f1_raw[31:1] (satır 87'de tanımlı)
+  eh2_pmp #(
+    .NUM_ENTRIES (pt.PMP_ENTRIES),
+    .PADDR_WIDTH (32),
+    .G           (0)
+  ) u_pmp_fetch (
+    .pmpcfg      (tlu_pmp_pmpcfg),
+    .pmpaddr     (tlu_pmp_pmpaddr),
+    .addr        ({ifc_fetch_addr_f1_raw[31:1], 1'b0}),
+    .access_size (3'd2),    // 4-byte fetch
+    .access_type (2'b00),   // ACC_FETCH
+    .priv_mode   (2'b11),   // M-only core
+    .allow       (),
+    .fault       (pmp_fetch_fault),
+    .fault_cause ()
+  );
+└────────────────────────────────────────────────────────────────────────────┘
+
+┌── 6d. region_acc_fault_f1 ASSIGN DEĞİŞTİR ────────────────────────────────┐
+  Dosya: eh2_ifu_ifc_ctl.sv
+
+  MEVCUT satır 375 (ICCM_ENABLE=1 dalı):
+    assign region_acc_fault_f1 = ~iccm_acc_in_range_f1 & iccm_acc_in_region_f1;
+  YENİ:
+    assign region_acc_fault_f1 = (~iccm_acc_in_range_f1 & iccm_acc_in_region_f1)
+                                 | (pmp_fetch_fault & ifc_fetch_req_f1);
+
+  MEVCUT satır 397 (ICCM_ENABLE=0 dalı):
+    assign region_acc_fault_f1 = 1'b0;
+  YENİ:
+    assign region_acc_fault_f1 = pmp_fetch_fault & ifc_fetch_req_f1;
+
+  NOT: `ifc_fetch_req_f1` ile AND alarak sadece aktif fetch isteklerinde
+       fault üretilmesini sağlıyoruz (boşta falso tetikleme yok).
+└────────────────────────────────────────────────────────────────────────────┘
+
+──────────────────────────────────────────────────────────────────────────────
+ADIM 7: eh2_lsu_addrcheck.sv  →  DATA ACCESS PMP KONTROLÜ
+──────────────────────────────────────────────────────────────────────────────
+★ ÖNEMLİ: lsu_addrcheck'te mevcut fault sinyali access_fault_dc2'dir (satır 54
+  output, satır 199 assign). Bu sinyal DC2'de hesaplanır. PMP check de DC2'de
+  yapılmalıdır; DC2 sinyallerini kullan: start_addr_dc2, end_addr_dc2, lsu_pkt_dc2.
+
+Sinyal zinciri (dokunma):
+  access_fault_dc2 (addrcheck satır 199)
+  → lsu_error_pkt DC pipeline'ı
+  → lsu_exc_acc_dc4 (dec_tlu_ctl.sv satır 882)
+  → mcause=5'h05 (load, satır 1019) / 5'h07 (store, satır 1021)
+
+┌── 7a. PORT EKLE ───────────────────────────────────────────────────────────┐
+  Dosya: eh2_lsu_addrcheck.sv  →  satır 30-61 arası port listesi
+
+  input logic [7:0]  tlu_pmp_pmpcfg  [pt.PMP_ENTRIES],
+  input logic [31:0] tlu_pmp_pmpaddr [pt.PMP_ENTRIES]
+└────────────────────────────────────────────────────────────────────────────┘
+
+┌── 7b. LOCAL SİNYAL EKLE ───────────────────────────────────────────────────┐
+  Dosya: eh2_lsu_addrcheck.sv  →  satır 81-84 arası (diğer logic tanımları)
+
+  logic        pmp_access_fault_dc2;
+  logic [2:0]  pmp_access_size_dc2;
+└────────────────────────────────────────────────────────────────────────────┘
+
+┌── 7c. eh2_pmp INSTANCE ────────────────────────────────────────────────────┐
+  Dosya: eh2_lsu_addrcheck.sv  →  satır 199'un (access_fault_dc2 assign)
+         HEMEN ÖNCESİNE ekle.
+
+  // Erişim boyutu: lsu_pkt_dc2'den türet
+  assign pmp_access_size_dc2 = lsu_pkt_dc2.word ? 3'd2 :
+                               lsu_pkt_dc2.half ? 3'd1 : 3'd0;
+
+  eh2_pmp #(
+    .NUM_ENTRIES (pt.PMP_ENTRIES),
+    .PADDR_WIDTH (32),
+    .G           (0)
+  ) u_pmp_lsu (
+    .pmpcfg      (tlu_pmp_pmpcfg),
+    .pmpaddr     (tlu_pmp_pmpaddr),
+    .addr        (start_addr_dc2),                          // DC2 adresi
+    .access_size (pmp_access_size_dc2),
+    .access_type (lsu_pkt_dc2.store ? 2'b10 : 2'b01),      // STORE/LOAD
+    .priv_mode   (2'b11),   // M-only core
+    .allow       (),
+    .fault       (pmp_access_fault_dc2),
+    .fault_cause ()
+  );
+└────────────────────────────────────────────────────────────────────────────┘
+
+┌── 7d. access_fault_dc2 ASSIGN DEĞİŞTİR ───────────────────────────────────┐
+  Dosya: eh2_lsu_addrcheck.sv  →  satır 199-200
+
+  MEVCUT satır 199:
+    assign access_fault_dc2 = (unmapped_access_fault_dc2 | mpu_access_fault_dc2 |
+                               picm_access_fault_dc2 | regpred_access_fault_dc2 |
+                               amo_access_fault_dc2) & lsu_pkt_dc2.valid & ~lsu_pkt_dc2.dma;
+  YENİ:
+    assign access_fault_dc2 = (unmapped_access_fault_dc2 | mpu_access_fault_dc2 |
+                               picm_access_fault_dc2 | regpred_access_fault_dc2 |
+                               amo_access_fault_dc2 | pmp_access_fault_dc2)
+                              & lsu_pkt_dc2.valid & ~lsu_pkt_dc2.dma;
+
+  Bu değişiklik yeterli. PMP fault artık access_fault_dc2'ye dahil oldu.
+  Oradan lsu_exc_acc_dc4 → mcause 5'h05/5'h07 zinciri otomatik çalışır.
+└────────────────────────────────────────────────────────────────────────────┘
+
+──────────────────────────────────────────────────────────────────────────────
+ADIM 8: eh2_veer.sv  →  SİNYAL BAĞLANTILARI
+──────────────────────────────────────────────────────────────────────────────
+
+KRİTİK BİLGİ: eh2_veer.sv'de dec, ifu ve lsu modülleri `.*` (implicit
+  wildcard port bağlantısı) kullanmaktadır (satır 1060, 1069, vb.).
+  Bu demektir ki: eh2_veer.sv'de bir logic wire tanımlanırsa ve alt modülde
+  aynı isimde bir port varsa, bağlantı OTOMATIK kurulur — tek tek yazmaya gerek yok.
+
+  Yani sadece wire'ı tanımlamak yeterli; dec/ifu/lsu instance'larını düzenleme.
+
+┌── 8a. WIRE TANIMLARI ──────────────────────────────────────────────────────┐
+  Dosya: eh2_veer.sv  →  satır 590 civarı (dec_tlu_meihap gibi diğer wire'ların
+         yanına) ekle:
+
+  logic [7:0]  tlu_pmp_pmpcfg  [pt.PMP_ENTRIES];
+  logic [31:0] tlu_pmp_pmpaddr [pt.PMP_ENTRIES];
+
+  Bu satırlar eklenince:
+  - dec (TLU): tlu_pmp_pmpcfg/pmpaddr OUTPUT → wire'a bağlanır (otomatik)
+  - ifu:       tlu_pmp_pmpcfg/pmpaddr INPUT  → wire'dan alır (otomatik)
+  - lsu:       tlu_pmp_pmpcfg/pmpaddr INPUT  → wire'dan alır (otomatik)
+└────────────────────────────────────────────────────────────────────────────┘
+
+  ── Sinyal neden bu kadar çok dosyadan geçiyor? (Açıklama) ─────────────────
+  `tlu_pmp_pmpcfg` sinyalinin ulaşması gereken asıl yer:
+    IFU tarafında → eh2_ifu_ifc_ctl.sv
+    LSU tarafında → eh2_lsu_addrcheck.sv
+  Ama bu iki modül eh2_veer.sv'ye doğrudan bağlı değil; arada katmanlar var:
+
+    eh2_veer → eh2_ifu → eh2_ifu_ifc_ctl
+    eh2_veer → eh2_lsu → eh2_lsu_lsc_ctl → eh2_lsu_addrcheck
+
+  Her katmanda ".*" wildcard kullanılıyor. ".*" şu anlama gelir: alt modülde
+  eşleşen isimde bir port varsa otomatik bağla. Ama sinyal ortada bir modülde
+  port olarak tanımlı değilse o noktada takılır, alta geçemez.
+  Bu yüzden zincirin her halkasına aynı iki port satırını eklemek gerekiyor.
+  ─────────────────────────────────────────────────────────────────────────────
+
+┌── 8b. YENİ PORT EKLENECEKLERİ SADECE 3 DOSYA (diğerleri önceki adımlarda) ┐
+
+  Adım 6a'da eh2_ifu_ifc_ctl.sv'ye port zaten eklendi.
+  Adım 7a'da eh2_lsu_addrcheck.sv'ye port zaten eklendi.
+  Bu adımda 8a'nın wire'ının zincirde akması için sadece 3 ARACI MODÜLE
+  port eklemek kalıyor:
+
+  Eklenecek iki satır (üçüne de aynı):
+
+    input logic [7:0]  tlu_pmp_pmpcfg  [pt.PMP_ENTRIES],
+    input logic [31:0] tlu_pmp_pmpaddr [pt.PMP_ENTRIES]
+
+  ┌──────────────────────────┬────────────────────────────────────────────┐
+  │  Dosya                   │  Nereye                                    │
+  ├──────────────────────────┼────────────────────────────────────────────┤
+  │  eh2_ifu.sv              │  Modül port listesi, diğer "input logic"   │
+  │                          │  portlarının yanına (~satır 200-215)       │
+  ├──────────────────────────┼────────────────────────────────────────────┤
+  │  eh2_lsu.sv              │  Modül port listesi, diğer "input logic"   │
+  │                          │  portlarının yanına                        │
+  ├──────────────────────────┼────────────────────────────────────────────┤
+  │  eh2_lsu_lsc_ctl.sv      │  Modül port listesi (~satır 60-80)         │
+  └──────────────────────────┴────────────────────────────────────────────┘
+
+  Özet: Adım 8 toplamda 2 iş yapıyor:
+    8a → eh2_veer.sv'ye 2 wire satırı ekle
+    8b → 3 aracı modüle birer input port satırı ekle
+  Hepsi bu kadar. priv_mode için ek port YOK; her checker instance'ında
+  .priv_mode(2'b11) sabit yazılıyor (VeeR-EH2 M-only core).
+└────────────────────────────────────────────────────────────────────────────┘
+
+
+════════════════════════════════════════════════════════════════════════════════
+BÖLÜM 3: eh2_pmp.sv DURUMU — SPEC UYGUNLUK DOĞRULAMASI
+════════════════════════════════════════════════════════════════════════════════
+
+design/pmp/rtl/eh2_pmp.sv dosyası kaynak koddan doğrulanmıştır.
+Aşağıdaki tüm özellikler ZATEN DOĞRU UYGULANMIŞ durumdadır:
+
+  ┌─────┬────────────────────────────────────────────────────────┬──────────┐
+  │  #  │  Özellik                                               │  Durum   │
+  ├─────┼────────────────────────────────────────────────────────┼──────────┤
+  │  1  │  L=0 + M-mode → unconditional allow (satır 180-182)   │  MEVCUT  │
+  │  2  │  access_size girişi + addr_last + multi-byte span      │  MEVCUT  │
+  │     │    (satır 22, 68-81, 151-169)                          │          │
+  │  3  │  fault_cause [4:0] çıkışı (satır 29, 233-244)         │  MEVCUT  │
+  │  4  │  NUM_ENTRIES default = 16 (satır 5)                    │  MEVCUT  │
+  │  5  │  NUM_ENTRIES=0 dalı: M→allow, S/U→deny (satır 88-89)  │  MEVCUT  │
+  │  6  │  R=0,W=1 reserved → deny (satır 184-186)              │  MEVCUT  │
+  │  7  │  PRIV_S=2'b01, PRIV_U=2'b00 tanımlı (satır 39-41)    │  MEVCUT  │
+  │  8  │  G granularity parametresi + NA4 G≥1 disable          │  MEVCUT  │
+  │     │    (satır 14, 61-65, 113-114, 158-160)                 │          │
+  │  9  │  PADDR_WIDTH parametresi (RV32=34, RV64=56)           │  MEVCUT  │
+  │ 10  │  NAPOT overflow (all-ones pmpaddr) doğru davranış      │  MEVCUT  │
+  │ 11  │  Priority: j=N-1..0 loop, Entry 0 en yüksek öncelik   │  MEVCUT  │
+  └─────┴────────────────────────────────────────────────────────┴──────────┘
+
+Çekirdek modülde entegrasyon öncesi kod değişikliği gerekmemektedir.
+Gerekli olan yalnızca doğru port bağlantılarının yapılmasıdır (Adım 6-7).
+
+
+════════════════════════════════════════════════════════════════════════════════
+BÖLÜM 4: ENTEGRASYON SIRASI VE KONTROL LİSTESİ
+════════════════════════════════════════════════════════════════════════════════
+
+  Adım 1:  snapshots/default_mt/eh2_pdef.vh  → PMP_ENTRIES struct alanı
+  Adım 2:  snapshots/default_mt/eh2_param.vh → PMP_ENTRIES değeri (7'h10)
+  Adım 3:  design/flist → $RV_ROOT/design/pmp/rtl/eh2_pmp.sv satırı ekle
+  Adım 4:  eh2_dec_csr.sv → pmpcfg0-3 + pmpaddr0-15 doğrudan decode ekle,
+                              legal ve postsync denklemlerini genişlet
+  Adım 5:  eh2_dec_tlu_ctl.sv + eh2_dec_tlu_top.sv
+               → pmpcfg/pmpaddr register'ları, write/read logic, lock mantığı,
+                 tlu_pmp_pmpcfg / tlu_pmp_pmpaddr output port'ları
+  Adım 6:  eh2_ifu_ifc_ctl.sv → eh2_pmp instance (fetch), region_acc_fault_f1'e OR
+  Adım 7:  eh2_lsu_addrcheck.sv → eh2_pmp instance (load/store), exc_type=1 routing
+  Adım 8:  eh2_veer.sv → wire tanımları, dec/ifu/lsu port bağlantıları
+
+  KONTROL: Exception cause kodları (5'h01, 5'h05, 5'h07) eh2_dec_tlu_ctl.sv
+  satır 1016-1021'de ZATEN BAĞLIDIR. PMP fault → mevcut inst_acc_e4 /
+  lsu_exc_acc_dc4 wire'larına ulaştığında mcause otomatik set edilir.
+
+================================================================================
+  Son: Bu analiz riscv-privileged §3.7.1-§3.7.2 ve VeeR-EH2 RTL kaynak dosyaları
+  (eh2_dec_csr.sv, eh2_dec_tlu_ctl.sv, eh2_ifu_ifc_ctl.sv, eh2_ifu_aln_ctl.sv,
+  eh2_ifu_mem_ctl.sv, eh2_lsu_addrcheck.sv, eh2_pmp.sv, eh2_pdef.vh, eh2_param.vh,
+  design/flist) doğrulanarak hazırlanmıştır.
+================================================================================

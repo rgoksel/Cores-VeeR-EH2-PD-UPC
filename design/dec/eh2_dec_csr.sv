@@ -140,10 +140,39 @@ logic valid_only;
 logic presync;
 logic postsync;
 logic glob;
+
+//AAAAAAA
+logic csr_pmpcfg0, csr_pmpcfg1, csr_pmpcfg2, csr_pmpcfg3;
+     logic csr_pmpaddr0,  csr_pmpaddr1,  csr_pmpaddr2,  csr_pmpaddr3;
+     logic csr_pmpaddr4,  csr_pmpaddr5,  csr_pmpaddr6,  csr_pmpaddr7;
+     logic csr_pmpaddr8,  csr_pmpaddr9,  csr_pmpaddr10, csr_pmpaddr11;
+     logic csr_pmpaddr12, csr_pmpaddr13, csr_pmpaddr14, csr_pmpaddr15;
 //logic ooat;
 
 logic conditionally_illegal, valid_csr;
 logic legal;
+
+    assign csr_pmpcfg0  = (dec_csr_rdaddr_d == 12'h3A0);
+    assign csr_pmpcfg1  = (dec_csr_rdaddr_d == 12'h3A1);
+    assign csr_pmpcfg2  = (dec_csr_rdaddr_d == 12'h3A2);
+    assign csr_pmpcfg3  = (dec_csr_rdaddr_d == 12'h3A3);
+
+    assign csr_pmpaddr0  = (dec_csr_rdaddr_d == 12'h3B0);
+    assign csr_pmpaddr1  = (dec_csr_rdaddr_d == 12'h3B1);
+    assign csr_pmpaddr2  = (dec_csr_rdaddr_d == 12'h3B2);
+    assign csr_pmpaddr3  = (dec_csr_rdaddr_d == 12'h3B3);
+    assign csr_pmpaddr4  = (dec_csr_rdaddr_d == 12'h3B4);
+    assign csr_pmpaddr5  = (dec_csr_rdaddr_d == 12'h3B5);
+    assign csr_pmpaddr6  = (dec_csr_rdaddr_d == 12'h3B6);
+    assign csr_pmpaddr7  = (dec_csr_rdaddr_d == 12'h3B7);
+    assign csr_pmpaddr8  = (dec_csr_rdaddr_d == 12'h3B8);
+    assign csr_pmpaddr9  = (dec_csr_rdaddr_d == 12'h3B9);
+    assign csr_pmpaddr10 = (dec_csr_rdaddr_d == 12'h3BA);
+    assign csr_pmpaddr11 = (dec_csr_rdaddr_d == 12'h3BB);
+    assign csr_pmpaddr12 = (dec_csr_rdaddr_d == 12'h3BC);
+    assign csr_pmpaddr13 = (dec_csr_rdaddr_d == 12'h3BD);
+    assign csr_pmpaddr14 = (dec_csr_rdaddr_d == 12'h3BE);
+    assign csr_pmpaddr15 = (dec_csr_rdaddr_d == 12'h3BF);
 
 assign csr_misa = (!dec_csr_rdaddr_d[11]&!dec_csr_rdaddr_d[6]
     &!dec_csr_rdaddr_d[5]&!dec_csr_rdaddr_d[2]&dec_csr_rdaddr_d[0]);
@@ -397,7 +426,27 @@ assign postsync = (dec_csr_rdaddr_d[7]&dec_csr_rdaddr_d[5]&dec_csr_rdaddr_d[2]
     &!dec_csr_rdaddr_d[3]&!dec_csr_rdaddr_d[2]&!dec_csr_rdaddr_d[0]) | (
     dec_csr_rdaddr_d[10]&!dec_csr_rdaddr_d[4]&!dec_csr_rdaddr_d[3]
     &dec_csr_rdaddr_d[0]) | (!dec_csr_rdaddr_d[11]&dec_csr_rdaddr_d[7]
-    &dec_csr_rdaddr_d[6]&!dec_csr_rdaddr_d[4]&!dec_csr_rdaddr_d[3]);
+    &dec_csr_rdaddr_d[6]&!dec_csr_rdaddr_d[4]&!dec_csr_rdaddr_d[3])
+    | csr_pmpcfg0
+    | csr_pmpcfg1
+    | csr_pmpcfg2
+    | csr_pmpcfg3
+    | csr_pmpaddr0
+    | csr_pmpaddr1
+    | csr_pmpaddr2
+    | csr_pmpaddr3
+    | csr_pmpaddr4
+    | csr_pmpaddr5
+    | csr_pmpaddr6
+    | csr_pmpaddr7
+    | csr_pmpaddr8
+    | csr_pmpaddr9
+    | csr_pmpaddr10
+    | csr_pmpaddr11
+    | csr_pmpaddr12
+    | csr_pmpaddr13
+    | csr_pmpaddr14
+    | csr_pmpaddr15;
 
 assign glob = (!dec_csr_rdaddr_d[11]&!dec_csr_rdaddr_d[6]&!dec_csr_rdaddr_d[5]
     &!dec_csr_rdaddr_d[2]&dec_csr_rdaddr_d[0]) | (dec_csr_rdaddr_d[6]
@@ -508,8 +557,10 @@ assign legal = (!dec_csr_rdaddr_d[11]&dec_csr_rdaddr_d[10]&dec_csr_rdaddr_d[9]
     &!dec_csr_rdaddr_d[7]&!dec_csr_rdaddr_d[6]&dec_csr_rdaddr_d[5]
     &dec_csr_rdaddr_d[4]) | (dec_csr_rdaddr_d[11]&!dec_csr_rdaddr_d[10]
     &dec_csr_rdaddr_d[9]&dec_csr_rdaddr_d[8]&!dec_csr_rdaddr_d[6]
-    &!dec_csr_rdaddr_d[5]&dec_csr_rdaddr_d[4]);
-
+    &!dec_csr_rdaddr_d[5]&dec_csr_rdaddr_d[4]) 
+    //AAAAAAAAAA
+    | (dec_csr_rdaddr_d[11:4] == 8'h3A)   // 0x3A0-0x3AF pmpcfg
+    | (dec_csr_rdaddr_d[11:4] == 8'h3B);  // 0x3B0-0x3BF pmpaddr;
 
 
 //
@@ -609,5 +660,11 @@ assign legal = (!dec_csr_rdaddr_d[11]&dec_csr_rdaddr_d[10]&dec_csr_rdaddr_d[9]
    assign tlu_csr_pkt_d.postsync = postsync;
    assign tlu_csr_pkt_d.glob = glob;
    assign tlu_csr_pkt_d.legal = legal;
+   //AAAAAAAAAA
+   assign tlu_csr_pkt_d.csr_pmp =  csr_pmpcfg0   | csr_pmpcfg1   | csr_pmpcfg2   | csr_pmpcfg3 
+                                 | csr_pmpaddr0  | csr_pmpaddr1  | csr_pmpaddr2  | csr_pmpaddr3 
+                                 | csr_pmpaddr4  | csr_pmpaddr5  | csr_pmpaddr6  | csr_pmpaddr7 
+                                 | csr_pmpaddr8  | csr_pmpaddr9  | csr_pmpaddr10 | csr_pmpaddr11 
+                                 | csr_pmpaddr12 | csr_pmpaddr13 | csr_pmpaddr14 | csr_pmpaddr15;
 
 endmodule

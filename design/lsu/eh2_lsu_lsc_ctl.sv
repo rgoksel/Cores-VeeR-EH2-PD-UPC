@@ -82,6 +82,10 @@ import eh2_pkg::*;
    input logic [pt.NUM_THREADS-1:0] flush_dc5,
    input logic [pt.NUM_THREADS-1:0] dec_tlu_lr_reset_wb,
 
+   //AAAAAAAAAAAAAAAAAAAAA
+   input logic [7:0]  tlu_pmp_pmpcfg  [pt.PMP_ENTRIES],
+   input logic [29:0] tlu_pmp_pmpaddr [pt.PMP_ENTRIES],
+
    input  logic [31:0]           lsu_dccm_data_dc3,
    input  logic [31:0]           lsu_dccm_data_corr_dc3,
    input  logic [31:0]           picm_rd_data_dc3,

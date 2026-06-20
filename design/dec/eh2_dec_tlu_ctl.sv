@@ -242,6 +242,11 @@ import eh2_pkg::*;
 
    output logic tlu_btb_write_kill, // kill writes until forward progress is made
 
+   /////// pmp
+   output logic [7:0]  tlu_pmp_pmpcfg  [pt.PMP_ENTRIES],
+   output logic [29:0] tlu_pmp_pmpaddr [pt.PMP_ENTRIES],
+   /////
+
    output logic ic_perr_wb,
    output logic iccm_sbecc_wb,
    output logic allow_dbg_halt_csr_write,
@@ -435,6 +440,15 @@ end
    logic dbg_halt_req_no_start, dbg_halt_req_no_start_f;
 
    logic tlu_btb_write_kill_ns;
+
+   //// fro pmp logic definitions //// AAAAAAAAAAAAAAA
+   logic [7:0]  pmpcfg_reg  [0:pt.PMP_ENTRIES-1];
+   logic [29:0] pmpaddr_reg [0:pt.PMP_ENTRIES-1];
+   logic        wr_pmpcfg_wb;    // pmpcfg CSR
+   logic        wr_pmpaddr_wb;   // pmpaddr CSR
+   //logic [1:0]  wr_pmpcfg_csr;  // 0-3 -> pmpcfg0-3
+   //logic [3:0]  wr_pmpaddr_idx; // 0-15 -> pmpaddr0-15
+   ////
 
      eh2_dec_timer_ctl #(.pt(pt)) int_timers(.*);
    // end of internal timers
@@ -2343,9 +2357,72 @@ end
                                   ({32{csr_rd.csr_dicad1}}    & dicad1[31:0]) |
                                   ({32{csr_rd.csr_dicawics}}  & {7'b0, dicawics[16], 2'b0, dicawics[15:14], 3'b0, dicawics[13:0], 3'b0}) |
                                   ({32{csr_rd.csr_mfdhs}}     & {30'b0, mfdhs[1:0]}) |
-                                  ({32{dec_timer_read_d}} & dec_timer_rddata_d[31:0])
-                                  );
+                                  ({32{dec_timer_read_d}} & dec_timer_rddata_d[31:0]) |
+                                  ({32{csr_rd.csr_pmp & (dec_i0_csr_rdaddr_d[11:2] == 10'h0E8)}} &
+                                   {pmpcfg_reg[{dec_i0_csr_rdaddr_d[1:0], 2'b11}],
+                                    pmpcfg_reg[{dec_i0_csr_rdaddr_d[1:0], 2'b10}],
+                                    pmpcfg_reg[{dec_i0_csr_rdaddr_d[1:0], 2'b01}],
+                                    pmpcfg_reg[{dec_i0_csr_rdaddr_d[1:0], 2'b00}]}) |
+                                  ({32{csr_rd.csr_pmp & (dec_i0_csr_rdaddr_d[11:4] == 8'h3B)}} &
+                                   {2'b0, pmpaddr_reg[dec_i0_csr_rdaddr_d[3:0]]})
+                                    );
 //   end // block: CSR_rd_mux
+  localparam PMPCFG_BASE  = 12'h3A0;
+  localparam PMPADDR_BASE = 12'h3B0;
+
+  assign wr_pmpcfg_wb  = dec_i0_csr_wen_wb_mod
+                       & (dec_i0_csr_wraddr_wb[11:2] == PMPCFG_BASE[11:2]);
+  assign wr_pmpaddr_wb = dec_i0_csr_wen_wb_mod
+                       & (dec_i0_csr_wraddr_wb[11:4] == PMPADDR_BASE[11:4]);
+
+  genvar pmp_i;
+  generate
+  for (pmp_i = 0; pmp_i < pt.PMP_ENTRIES; pmp_i++) begin : gen_pmp_regs
+
+    logic wr_en_cfg;
+    assign wr_en_cfg = wr_pmpcfg_wb
+                     & (dec_i0_csr_wraddr_wb[1:0] == 2'(pmp_i >> 2))
+                     & ~pmpcfg_reg[pmp_i][7];
+
+    rvdffe #(8) pmpcfg_ff (
+      .*,
+      .en  (wr_en_cfg),
+      .din ({dec_i0_csr_wrdata_wb[pmp_i[1:0]*8 + 7],
+             2'b00,
+             dec_i0_csr_wrdata_wb[pmp_i[1:0]*8 + 4],
+             dec_i0_csr_wrdata_wb[pmp_i[1:0]*8 + 3],
+             dec_i0_csr_wrdata_wb[pmp_i[1:0]*8 + 2],
+             dec_i0_csr_wrdata_wb[pmp_i[1:0]*8 + 1],
+             dec_i0_csr_wrdata_wb[pmp_i[1:0]*8 + 0]}),
+      .dout(pmpcfg_reg[pmp_i])
+    );
+
+    logic tor_lock;
+    if (pmp_i < pt.PMP_ENTRIES - 1) begin : gen_tor
+      assign tor_lock = pmpcfg_reg[pmp_i+1][7]
+                      & (pmpcfg_reg[pmp_i+1][4:3] == 2'b01);
+    end else begin : gen_tor_last
+      assign tor_lock = 1'b0;
+    end
+
+    logic wr_en_addr;
+    assign wr_en_addr = wr_pmpaddr_wb
+                      & (dec_i0_csr_wraddr_wb[3:0] == 4'(pmp_i))
+                      & ~pmpcfg_reg[pmp_i][7]
+                      & ~tor_lock;
+
+    rvdffe #(30) pmpaddr_ff (
+      .*,
+      .en  (wr_en_addr),
+      .din (dec_i0_csr_wrdata_wb[29:0]),
+      .dout(pmpaddr_reg[pmp_i])
+    );
+
+  end
+  endgenerate
+
+  assign tlu_pmp_pmpcfg  = pmpcfg_reg;
+  assign tlu_pmp_pmpaddr = pmpaddr_reg;
 
 endmodule // eh2_dec_tlu_ctl
 
@@ -2499,6 +2576,7 @@ import eh2_pkg::*;
    rvdffs #(5) mitctl1_ff      (.*, .clk(csr_wr_clk), .en(wr_mitctl1_wb), .din({mitctl1_ns[3:1], mitctl1_0_b_ns, mit0_match_ns}), .dout({mitctl1[3:1], mitctl1_0_b, mit0_match_d1}));
    assign mitctl1[0] = ~mitctl1_0_b;
 
+//////////////////////////////
    assign dec_timer_read_d = csr_rd.csr_mitcnt1 |
                              csr_rd.csr_mitcnt0 |
                              csr_rd.csr_mitb1 |

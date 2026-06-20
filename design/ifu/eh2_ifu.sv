@@ -194,6 +194,11 @@ import eh2_pkg::*;
    input logic [pt.BTB_TOFFSET_SIZE+pt.BTB_BTAG_SIZE+5-1:0]      btb_vbank1_rd_data_f1,
    input logic [pt.BTB_TOFFSET_SIZE+pt.BTB_BTAG_SIZE+5-1:0]      btb_vbank2_rd_data_f1,
    input logic [pt.BTB_TOFFSET_SIZE+pt.BTB_BTAG_SIZE+5-1:0]      btb_vbank3_rd_data_f1,
+   
+   //AAAAAAAAAAA
+   input logic [7:0]  tlu_pmp_pmpcfg  [pt.PMP_ENTRIES],
+   input logic [29:0] tlu_pmp_pmpaddr [pt.PMP_ENTRIES],
+
    output logic                         btb_wren,
    output logic                         btb_rden,
    output logic [1:0] [pt.BTB_ADDR_HI:1] btb_rw_addr,  // per bank
@@ -212,7 +217,7 @@ import eh2_pkg::*;
    output logic  [pt.NUM_THREADS-1:0] ifu_i0_icaf,         // Instruction 0 access fault. From Aligner to Decode
 
    output logic  [pt.NUM_THREADS-1:0] [1:0]  ifu_i0_icaf_type, // Instruction 0 access fault type
-
+   
    output logic  [pt.NUM_THREADS-1:0] ifu_i0_icaf_second,      // Instruction 0 has access fault on second 2B of 4B inst
    output logic  [pt.NUM_THREADS-1:0] ifu_i0_dbecc,        // Instruction 0 has double bit ecc error
    output logic                     iccm_dma_sb_error,   // Single Bit ECC error from a DMA access

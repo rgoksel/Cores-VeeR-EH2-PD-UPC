@@ -256,6 +256,10 @@ import eh2_pkg::*;
 
    output logic [pt.NUM_THREADS-1:0] dec_tlu_btb_write_kill, // Kill writes while working on forward progress after a branch error
 
+//////for pmp:  AAAAAAAAAAAA
+     output logic [7:0]  tlu_pmp_pmpcfg  [pt.PMP_ENTRIES],
+     output logic [29:0] tlu_pmp_pmpaddr [pt.PMP_ENTRIES],
+////
    // feature disable from mfdc
    output logic  dec_tlu_external_ldfwd_disable, // disable external load forwarding
    output logic  dec_tlu_sideeffect_posted_disable, // disable posted writes to side-effect address

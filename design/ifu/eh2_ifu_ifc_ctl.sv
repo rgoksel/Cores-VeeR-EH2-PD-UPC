@@ -61,6 +61,11 @@ import eh2_pkg::*;
    input logic tid,
    input logic ifc_select_tid_f1,
 
+////////////// pmp
+   input logic [7:0]  tlu_pmp_pmpcfg  [pt.PMP_ENTRIES], 
+   input logic [29:0] tlu_pmp_pmpaddr [pt.PMP_ENTRIES],
+   /////////
+
    output logic  fetch_uncacheable_f1, // fetch to uncacheable address as determined by MRAC
 
    output logic [31:1] fetch_addr_f1, // fetch addr F1
@@ -83,6 +88,8 @@ import eh2_pkg::*;
    output logic  ready // ready to fetch
    );
 
+////pmp
+  logic pmp_fetch_fault;
 
    logic [31:1]  miss_addr, ifc_fetch_addr_f1_raw;
    logic [31:3]  fetch_addr_next;
@@ -362,6 +369,21 @@ end
 
 if (pt.ICCM_ENABLE == 1)
  begin
+      eh2_pmp #(
+         .NUM_ENTRIES (pt.PMP_ENTRIES),
+         .PADDR_WIDTH (32),
+         .G           (0)
+      ) u_pmp_fetch (
+         .pmpcfg      (tlu_pmp_pmpcfg),
+         .pmpaddr     (tlu_pmp_pmpaddr),
+         .addr        ({ifc_fetch_addr_f1_raw[31:1], 1'b0}),
+         .access_size (3'd2),
+         .access_type (2'b00),
+         .priv_mode   (2'b11),
+         .allow       (),
+         .fault       (pmp_fetch_fault),
+         .fault_cause ()
+      );
    rvrangecheck #( .CCM_SADR    (pt.ICCM_SADR),
                    .CCM_SIZE    (pt.ICCM_SIZE) ) iccm_rangecheck (
                                                                      .addr     ({fetch_addr_f1[31:1],1'b0}) ,
@@ -372,7 +394,8 @@ if (pt.ICCM_ENABLE == 1)
    assign iccm_access_f1 = iccm_acc_in_range_f1 ;
 
 
-   assign region_acc_fault_f1 = ~iccm_acc_in_range_f1 & iccm_acc_in_region_f1 ;
+   assign region_acc_fault_f1 = (~iccm_acc_in_range_f1 & iccm_acc_in_region_f1)
+                                 | (pmp_fetch_fault & fetch_req_f1);
 
     if(pt.NUM_THREADS > 1) begin
    assign dma_access_ok = ( (~iccm_access_f1 |
@@ -382,6 +405,21 @@ if (pt.ICCM_ENABLE == 1)
                               dma_iccm_stall_any_f;
     end
     else begin
+      eh2_pmp #(
+         .NUM_ENTRIES (pt.PMP_ENTRIES),
+         .PADDR_WIDTH (32),
+         .G           (0)
+      ) u_pmp_fetch (
+         .pmpcfg      (tlu_pmp_pmpcfg),
+         .pmpaddr     (tlu_pmp_pmpaddr),
+         .addr        ({ifc_fetch_addr_f1_raw[31:1], 1'b0}),
+         .access_size (3'd2),
+         .access_type (2'b00),
+         .priv_mode   (2'b11),
+         .allow       (),
+         .fault       (pmp_fetch_fault),
+         .fault_cause ()
+      );
    assign dma_access_ok = ( (~iccm_access_f1 |
                                  (fb_full_f1 & ~(ifu_fb_consume2 | ifu_fb_consume1)) |
                                  wfm |
@@ -394,7 +432,22 @@ else
  begin
    assign iccm_access_f1 = 1'b0 ;
    assign dma_access_ok  = 1'b0 ;
-   assign region_acc_fault_f1  = 1'b0 ;
+   eh2_pmp #(
+      .NUM_ENTRIES (pt.PMP_ENTRIES),
+      .PADDR_WIDTH (32),
+      .G           (0)
+   ) u_pmp_fetch (
+      .pmpcfg      (tlu_pmp_pmpcfg),
+      .pmpaddr     (tlu_pmp_pmpaddr),
+      .addr        ({ifc_fetch_addr_f1_raw[31:1], 1'b0}),
+      .access_size (3'd2),
+      .access_type (2'b00),
+      .priv_mode   (2'b11),
+      .allow       (),
+      .fault       (pmp_fetch_fault),
+      .fault_cause ()
+   );
+   assign region_acc_fault_f1  = pmp_fetch_fault & fetch_req_f1;
  end
 
 
