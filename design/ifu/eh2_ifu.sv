@@ -196,8 +196,8 @@ import eh2_pkg::*;
    input logic [pt.BTB_TOFFSET_SIZE+pt.BTB_BTAG_SIZE+5-1:0]      btb_vbank3_rd_data_f1,
    
    //AAAAAAAAAAA
-   input logic [7:0]  tlu_pmp_pmpcfg  [pt.PMP_ENTRIES],
-   input logic [29:0] tlu_pmp_pmpaddr [pt.PMP_ENTRIES],
+   input logic [7:0]  tlu_pmp_pmpcfg  [pt.NUM_THREADS][pt.PMP_ENTRIES],
+   input logic [29:0] tlu_pmp_pmpaddr [pt.NUM_THREADS][pt.PMP_ENTRIES],
 
    output logic                         btb_wren,
    output logic                         btb_rden,
@@ -410,6 +410,8 @@ logic  fetch_tid_f1 ;
                                          .ready(ifc_ready[i]),
                                          .fetch_btb_rd_addr_f1(fetch_btb_rd_addr_f1[i]),
                                          .fetch_btb_rd_addr_p1_f1(fetch_btb_rd_addr_p1_f1[i]),
+                                         .tlu_pmp_pmpcfg(tlu_pmp_pmpcfg[i]),
+                                         .tlu_pmp_pmpaddr(tlu_pmp_pmpaddr[i]),
                                          .*
                                          );
 

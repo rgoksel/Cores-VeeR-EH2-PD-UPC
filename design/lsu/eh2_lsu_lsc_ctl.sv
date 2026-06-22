@@ -83,8 +83,8 @@ import eh2_pkg::*;
    input logic [pt.NUM_THREADS-1:0] dec_tlu_lr_reset_wb,
 
    //AAAAAAAAAAAAAAAAAAAAA
-   input logic [7:0]  tlu_pmp_pmpcfg  [pt.PMP_ENTRIES],
-   input logic [29:0] tlu_pmp_pmpaddr [pt.PMP_ENTRIES],
+   input logic [7:0]  tlu_pmp_pmpcfg  [pt.NUM_THREADS][pt.PMP_ENTRIES],
+   input logic [29:0] tlu_pmp_pmpaddr [pt.NUM_THREADS][pt.PMP_ENTRIES],
 
    input  logic [31:0]           lsu_dccm_data_dc3,
    input  logic [31:0]           lsu_dccm_data_corr_dc3,
@@ -252,6 +252,81 @@ import eh2_pkg::*;
 
    // Goes to TLU to increment the ECC error counter
    assign lsu_single_ecc_error_incr = (lsu_single_ecc_error_dc5 & ~lsu_double_ecc_error_dc5) & (lsu_commit_dc5 | lsu_pkt_dc5.dma) & lsu_pkt_dc5.valid;
+
+`ifndef SYNTHESIS
+// #region agent log
+   integer pmp_dbg_fd_dc2;
+   integer pmp_dbg_fd_dc3;
+
+   always_ff @(posedge lsu_c2_dc2_clk) begin
+      if (lsu_pkt_dc2.valid &&
+          (lsu_pkt_dc2.tid == 1'b0) &&
+          lsu_pkt_dc2.store &&
+          (lsu_addr_dc2[31:0] == 32'h000101a0)) begin
+         pmp_dbg_fd_dc2 = $fopen("pmp_ltor_debug.ndjson", "a");
+         if (pmp_dbg_fd_dc2 != 0) begin
+            $fdisplay(pmp_dbg_fd_dc2,
+                      "{\"runId\":\"pre-fix\",\"hypothesisId\":\"H1,H2,H3\",\"location\":\"design/lsu/eh2_lsu_lsc_ctl.sv:dc2\",\"message\":\"hart0 ltor.store_fault DC2 PMP path\",\"data\":{\"lsu_addr_dc2\":\"0x%08h\",\"end_addr_dc2\":\"0x%08h\",\"pmpcfg_entry0\":\"0x%02h\",\"pmpcfg_entry1\":\"0x%02h\",\"pmpaddr0\":\"0x%08h\",\"pmpaddr1\":\"0x%08h\",\"pmp_addr\":\"0x%08h\",\"pmp_addr_last\":\"0x%08h\",\"match0\":%0d,\"match1\":%0d,\"entry0_lock_i\":%0d,\"entry0_r_i\":%0d,\"entry0_w_i\":%0d,\"entry0_x_i\":%0d,\"entry1_lock_i\":%0d,\"entry1_r_i\":%0d,\"entry1_w_i\":%0d,\"entry1_x_i\":%0d,\"entry1_perm_ok\":%0d,\"pmp_allow\":%0d,\"pmp_fault\":%0d,\"pmp_access_fault_dc2\":%0d,\"lsu_pkt_dc2_valid\":%0d,\"lsu_pkt_dc2_dma\":%0d,\"access_fault_dc2\":%0d,\"exc_mscause_dc2\":\"0x%01h\"},\"timestamp\":%0t}",
+                      lsu_addr_dc2[31:0],
+                      end_addr_dc2[31:0],
+                      addrcheck.lsu_pmpcfg[0],
+                      addrcheck.lsu_pmpcfg[1],
+                      {2'b0, addrcheck.lsu_pmpaddr[0]},
+                      {2'b0, addrcheck.lsu_pmpaddr[1]},
+                      addrcheck.u_pmp_lsu.addr,
+                      addrcheck.u_pmp_lsu.addr_last,
+                      addrcheck.u_pmp_lsu.gen_with_pmp.match[0],
+                      addrcheck.u_pmp_lsu.gen_with_pmp.match[1],
+                      addrcheck.u_pmp_lsu.gen_with_pmp.gen_entry[0].lock_i,
+                      addrcheck.u_pmp_lsu.gen_with_pmp.gen_entry[0].r_i,
+                      addrcheck.u_pmp_lsu.gen_with_pmp.gen_entry[0].w_i,
+                      addrcheck.u_pmp_lsu.gen_with_pmp.gen_entry[0].x_i,
+                      addrcheck.u_pmp_lsu.gen_with_pmp.gen_entry[1].lock_i,
+                      addrcheck.u_pmp_lsu.gen_with_pmp.gen_entry[1].r_i,
+                      addrcheck.u_pmp_lsu.gen_with_pmp.gen_entry[1].w_i,
+                      addrcheck.u_pmp_lsu.gen_with_pmp.gen_entry[1].x_i,
+                      addrcheck.u_pmp_lsu.gen_with_pmp.perm_ok[1],
+                      addrcheck.u_pmp_lsu.pmp_allow,
+                      addrcheck.u_pmp_lsu.fault,
+                      addrcheck.pmp_access_fault_dc2,
+                      lsu_pkt_dc2.valid,
+                      lsu_pkt_dc2.dma,
+                      access_fault_dc2,
+                      exc_mscause_dc2[3:0],
+                      $time);
+            $fclose(pmp_dbg_fd_dc2);
+         end
+      end
+   end
+
+   always_ff @(posedge lsu_c2_dc3_clk) begin
+      if (lsu_pkt_dc3.valid &&
+          (lsu_pkt_dc3.tid == 1'b0) &&
+          lsu_pkt_dc3.store &&
+          (lsu_addr_dc3[31:0] == 32'h000101a0)) begin
+         pmp_dbg_fd_dc3 = $fopen("pmp_ltor_debug.ndjson", "a");
+         if (pmp_dbg_fd_dc3 != 0) begin
+            $fdisplay(pmp_dbg_fd_dc3,
+                      "{\"runId\":\"pre-fix\",\"hypothesisId\":\"H4\",\"location\":\"design/lsu/eh2_lsu_lsc_ctl.sv:dc3\",\"message\":\"hart0 ltor.store_fault DC3 exception path\",\"data\":{\"lsu_addr_dc3\":\"0x%08h\",\"access_fault_dc3\":%0d,\"misaligned_fault_dc3\":%0d,\"lsu_pkt_dc3_valid\":%0d,\"lsu_pkt_dc3_dma\":%0d,\"lsu_pkt_dc3_fast_int\":%0d,\"flush_dc3_tid\":%0d,\"lsu_error_pkt_dc3_exc_valid\":%0d,\"lsu_error_pkt_dc3_inst_type\":%0d,\"lsu_error_pkt_dc3_exc_type\":%0d,\"lsu_error_pkt_dc3_mscause\":\"0x%01h\",\"lsu_error_pkt_dc3_addr\":\"0x%08h\"},\"timestamp\":%0t}",
+                      lsu_addr_dc3[31:0],
+                      access_fault_dc3,
+                      misaligned_fault_dc3,
+                      lsu_pkt_dc3.valid,
+                      lsu_pkt_dc3.dma,
+                      lsu_pkt_dc3.fast_int,
+                      flush_dc3[lsu_pkt_dc3.tid],
+                      lsu_error_pkt_dc3.exc_valid,
+                      lsu_error_pkt_dc3.inst_type,
+                      lsu_error_pkt_dc3.exc_type,
+                      lsu_error_pkt_dc3.mscause[3:0],
+                      lsu_error_pkt_dc3.addr[31:0],
+                      $time);
+            $fclose(pmp_dbg_fd_dc3);
+         end
+      end
+   end
+// #endregion
+`endif
 
    // Generate exception packet
    assign lsu_error_pkt_dc3.exc_valid = (access_fault_dc3 | misaligned_fault_dc3 | lsu_double_ecc_error_dc3) & lsu_pkt_dc3.valid & ~lsu_pkt_dc3.dma & ~flush_dc3[lsu_pkt_dc3.tid] & ~lsu_pkt_dc3.fast_int;

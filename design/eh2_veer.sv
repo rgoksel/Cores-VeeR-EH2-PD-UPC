@@ -592,8 +592,8 @@ import eh2_pkg::*;
    logic [31:2]  dec_tlu_meihap; // Fast ext int base
 
    //AAAAAAAAA
-   logic [7:0]  tlu_pmp_pmpcfg  [pt.PMP_ENTRIES];
-   logic [29:0] tlu_pmp_pmpaddr [pt.PMP_ENTRIES];
+   logic [7:0]  tlu_pmp_pmpcfg  [pt.NUM_THREADS][pt.PMP_ENTRIES];
+   logic [29:0] tlu_pmp_pmpaddr [pt.NUM_THREADS][pt.PMP_ENTRIES];
 
    logic [pt.NUM_THREADS-1:0]   flush_final_e3;             // final flush
    logic [pt.NUM_THREADS-1:0]   i0_flush_final_e3;          // final flush from i0

@@ -78,8 +78,8 @@ import eh2_pkg::*;
    input logic  [pt.NUM_THREADS-1:0] i_cpu_halt_req,              // Asynchronous Halt request to CPU
    input logic  [pt.NUM_THREADS-1:0] i_cpu_run_req,               // Asynchronous Restart request to CPU
 
-   output logic [7:0]  tlu_pmp_pmpcfg  [pt.PMP_ENTRIES],
-   output logic [29:0] tlu_pmp_pmpaddr [pt.PMP_ENTRIES],
+   output logic [7:0]  tlu_pmp_pmpcfg  [pt.NUM_THREADS][pt.PMP_ENTRIES],
+   output logic [29:0] tlu_pmp_pmpaddr [pt.NUM_THREADS][pt.PMP_ENTRIES],
 
    output logic [pt.NUM_THREADS-1:0] dec_tlu_mhartstart, // thread 1 hartstart
    output logic [pt.NUM_THREADS-1:0] o_cpu_halt_status, // PMU interface, halted

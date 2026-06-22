@@ -257,8 +257,8 @@ import eh2_pkg::*;
    output logic [pt.NUM_THREADS-1:0] dec_tlu_btb_write_kill, // Kill writes while working on forward progress after a branch error
 
 //////for pmp:  AAAAAAAAAAAA
-     output logic [7:0]  tlu_pmp_pmpcfg  [pt.PMP_ENTRIES],
-     output logic [29:0] tlu_pmp_pmpaddr [pt.PMP_ENTRIES],
+     output logic [7:0]  tlu_pmp_pmpcfg  [pt.NUM_THREADS][pt.PMP_ENTRIES],
+     output logic [29:0] tlu_pmp_pmpaddr [pt.NUM_THREADS][pt.PMP_ENTRIES],
 ////
    // feature disable from mfdc
    output logic  dec_tlu_external_ldfwd_disable, // disable external load forwarding
@@ -555,6 +555,8 @@ end // else: !if(pt.NUM_THREADS > 1)
                                          .dec_tlu_flush_err_wb(dec_tlu_flush_err_wb[i]),
                                          .dec_tlu_flush_extint(dec_tlu_flush_extint[i]),
                                          .dec_tlu_fence_i_wb(dec_tlu_fence_i_wb[i]),
+                                         .tlu_pmp_pmpcfg(tlu_pmp_pmpcfg[i]),
+                                         .tlu_pmp_pmpaddr(tlu_pmp_pmpaddr[i]),
                                          .dec_tlu_dbg_halted(dec_tlu_dbg_halted_thr[i]),
                                          .*);
      end

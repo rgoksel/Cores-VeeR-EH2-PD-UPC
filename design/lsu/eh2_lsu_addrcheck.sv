@@ -44,8 +44,8 @@ import eh2_pkg::*;
    input logic [31:0]  dec_tlu_mrac_ff,           // CSR read
 
    /////////////////////pmp
-   input logic [7:0]  tlu_pmp_pmpcfg  [pt.PMP_ENTRIES],
-   input logic [29:0] tlu_pmp_pmpaddr [pt.PMP_ENTRIES],
+   input logic [7:0]  tlu_pmp_pmpcfg  [pt.NUM_THREADS][pt.PMP_ENTRIES],
+   input logic [29:0] tlu_pmp_pmpaddr [pt.NUM_THREADS][pt.PMP_ENTRIES],
 
    //////////////////////
 
@@ -92,6 +92,8 @@ import eh2_pkg::*;
 
    logic        pmp_access_fault_dc2;
    logic [2:0]  pmp_access_size_dc2;
+   logic [7:0]  lsu_pmpcfg  [pt.PMP_ENTRIES];
+   logic [29:0] lsu_pmpaddr [pt.PMP_ENTRIES];
 
    if (pt.DCCM_ENABLE == 1) begin: Gen_dccm_enable
       // Start address check
@@ -208,13 +210,18 @@ import eh2_pkg::*;
    assign pmp_access_size_dc2 = lsu_pkt_dc2.word ? 3'd2 :
                                lsu_pkt_dc2.half ? 3'd1 : 3'd0;
 
+   for (genvar pmp_i = 0; pmp_i < pt.PMP_ENTRIES; pmp_i++) begin : GenPMPThreadSelect
+      assign lsu_pmpcfg[pmp_i]  = tlu_pmp_pmpcfg[lsu_pkt_dc2.tid][pmp_i];
+      assign lsu_pmpaddr[pmp_i] = tlu_pmp_pmpaddr[lsu_pkt_dc2.tid][pmp_i];
+   end
+
    eh2_pmp #(
       .NUM_ENTRIES (pt.PMP_ENTRIES),
       .PADDR_WIDTH (32),
       .G           (0)
    ) u_pmp_lsu (
-      .pmpcfg      (tlu_pmp_pmpcfg),
-      .pmpaddr     (tlu_pmp_pmpaddr),
+      .pmpcfg      (lsu_pmpcfg),
+      .pmpaddr     (lsu_pmpaddr),
       .addr        (start_addr_dc2),
       .access_size (pmp_access_size_dc2),
       .access_type (lsu_pkt_dc2.store ? 2'b10 : 2'b01),      // STORE/LOAD

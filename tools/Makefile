@@ -48,6 +48,18 @@ TBDIR = ${RV_ROOT}/testbench
 # Define default test name
 TEST = hello_world
 
+PMP_REGRESSION_TESTS := \
+	pmp_test_new_basic \
+	pmp_test_new_ltor \
+	pmp_test_new_fetch \
+	pmp_test_new_napot \
+	pmp_test_new_aoff \
+	pmp_test_new_h1_read_deny \
+	pmp_test_new_h1_tor \
+	pmp_test_new_h1_na4 \
+	pmp_test_new_priority \
+	pmp_test_new_lock_warl
+
 # Define default test directories
 TEST_DIR = ${TBDIR}/asm
 HEX_DIR = ${TBDIR}/hex
@@ -169,6 +181,29 @@ riviera: program.hex riviera-build SimJTAG.so
 	vsim -c -lib work ${DEBUG_PLUS} ${RIVIERA_DEBUG} tb_top -sv_lib SimJTAG -do "run -all; exit" -l riviera.log
 
 
+pmp-regression:
+	@mkdir -p logs/pmp
+	@set -e; \
+	total=0; \
+	for t in $(PMP_REGRESSION_TESTS); do \
+	  log="logs/pmp/$$t.sim.log"; \
+	  if ! CCACHE_DISABLE=1 $(MAKE) -B TEST=$$t verilator > "$$log" 2>&1; then \
+	    echo "FAIL  $$t (build/simulation error; see $$log)"; \
+	    cat "$$log"; \
+	    exit 1; \
+	  fi; \
+	  if grep -q 'TEST_FAILED' "$$log" || ! grep -q 'TEST_PASSED' "$$log"; then \
+	    echo "FAIL  $$t (see $$log)"; \
+	    cat "$$log"; \
+	    exit 1; \
+	  fi; \
+	  cp -f console.log logs/pmp/$$t.console.log; \
+	  cp -f exec.log logs/pmp/$$t.exec.log; \
+	  echo "PASS  $$t"; \
+	  total=$$((total + 1)); \
+	done; \
+	echo "PMP regression: $$total/$(words $(PMP_REGRESSION_TESTS)) passed"
+
 
 #################### TEST Build #######################################
 
@@ -204,6 +239,6 @@ endif
 
 help:
 	@echo Make sure the environment variable RV_ROOT is set.
-	@echo Possible targets: verilator vcs irun vlog riviera help clean all verilator-build irun-build vcs-build riviera-build program.hex
+	@echo Possible targets: verilator vcs irun vlog riviera help clean all verilator-build irun-build vcs-build riviera-build program.hex pmp-regression
 
-.PHONY: help clean verilator vcs irun vlog riviera
+.PHONY: help clean verilator vcs irun vlog riviera pmp-regression

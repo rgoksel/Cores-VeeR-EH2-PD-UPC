@@ -56,8 +56,8 @@ import eh2_pkg::*;
    input logic [31:0]                      dec_tlu_mrac_ff,     // CSR for memory region control
 
    //AAAAAAAAAAAAA
-   input logic [7:0]  tlu_pmp_pmpcfg  [pt.PMP_ENTRIES],
-   input logic [29:0] tlu_pmp_pmpaddr [pt.PMP_ENTRIES],
+   input logic [7:0]  tlu_pmp_pmpcfg  [pt.NUM_THREADS][pt.PMP_ENTRIES],
+   input logic [29:0] tlu_pmp_pmpaddr [pt.NUM_THREADS][pt.PMP_ENTRIES],
 
    output logic [31:0]                     lsu_result_dc3,      // lsu load data
    output logic [31:0]                     lsu_result_corr_dc4, // This is the ECC corrected data going to RF
