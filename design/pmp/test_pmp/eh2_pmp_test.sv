@@ -3,7 +3,6 @@
 ///pmp
 /////////////////////////////////
 module eh2_pmp
-import eh2_pkg::*;
 #(
     // Spec allows only 0, 16, or 64.
     parameter int NUM_ENTRIES  = 16,
@@ -13,8 +12,7 @@ import eh2_pkg::*;
     parameter int PADDR_WIDTH  = 34,
         // PMP granularity exponent G 
     //   Grain size = 2^(G+2) bytes.  G=0 : 4-byte minimum
-    parameter int G            = 0,
-`include "eh2_param.vh"
+    parameter int G            = 0
 )(
     // PMP CSR contents (from TLU/CSR block) 
     input  logic [7:0]              pmpcfg  [NUM_ENTRIES],  // 8-bit config per entry
