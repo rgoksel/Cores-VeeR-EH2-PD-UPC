@@ -20,6 +20,7 @@ module tb_eh2_pmp;
     localparam [1:0] BAD_ACCESS = 2'b11;
 
     localparam [1:0] U_MODE = 2'b00;
+    localparam [1:0] S_MODE = 2'b01;
     localparam [1:0] M_MODE = 2'b11;
 
     localparam [1:0] A_OFF   = 2'b00;
@@ -396,6 +397,29 @@ endfunction
             addr        = 34'h0000_7000;
             access_type = STORE;
             check("H3 Priority: entry0 RWX beats entry1 none, STORE allow", 1'b1);
+
+            // Partial-overlap multi-byte priority case.
+            //
+            // Entry 0 covers [0x7004, 0x7008).
+            // Entry 1 covers [0x7000, 0x7010).
+            // The 8-byte load accesses [0x7000, 0x7008).
+            //
+            // Entry 0 is lower numbered and matches part of the load.
+            // It does not cover all bytes, so the specification says
+            // that the complete operation must fault.
+            clear_pmp();
+            priv_mode = U_MODE;
+
+            pmpcfg[0]  = cfg(A_NA4, 1'b1, 1'b1, 1'b1);
+            pmpaddr[0] = 32'h0000_7004 >> 2;
+
+            pmpcfg[1]  = cfg(A_NAPOT, 1'b1, 1'b1, 1'b1);
+            pmpaddr[1] = napot_addr(34'h0000_7000, 16);
+
+            addr        = 34'h0000_7000;
+            access_size = 3'd3;
+            access_type = LOAD;
+            check("H4 Partial overlap: entry0 matches part of 8B load, fault", 1'b0);
         end
 
         // GROUP I: Invalid access type
@@ -477,6 +501,190 @@ endfunction
 
             access_type = LOAD;
             check("K4 Entry 0 overrides entry 15: LOAD allow", 1'b1);
+        end
+
+        // GROUP S: S-mode permission decisions
+        //   - No active entries: S-mode access must fault (at least one
+        //     entry is implemented, so the "no PMP entry matches" default
+        //     applies, unlike M-mode).
+        //   - NA4 region: R-only and X-only permission checks in S-mode.
+        //   - Confirms the L bit does not change S-mode behavior: an
+        //     unlocked entry restricts S-mode exactly like a locked one.
+        //   - TOR and NAPOT boundary checks in S-mode.
+        //   - Priority: the lowest-numbered matching entry still decides
+        //     the result when the access is from S-mode.
+        begin : group_s_smode
+            clear_pmp();
+            priv_mode = S_MODE;
+
+            addr        = 34'h0000_D000;
+            access_type = LOAD;
+            check("S1 No active entries, S-mode load: fault", 1'b0);
+
+            // NA4 region, R only.
+            pmpcfg[0]  = cfg(A_NA4, 1'b0, 1'b0, 1'b1);
+            pmpaddr[0] = 32'h0000_D000 >> 2;
+
+            addr        = 34'h0000_D000;
+            access_type = LOAD;
+            check("S2 NA4 R-only region, S-mode load: allow", 1'b1);
+
+            access_type = STORE;
+            check("S3 NA4 R-only region, S-mode store: fault", 1'b0);
+
+            // Same region, X only, unlocked: S-mode must still obey X/R,
+            // unlike M-mode where L=0 would bypass the check entirely.
+            pmpcfg[0] = cfg(A_NA4, 1'b1, 1'b0, 1'b0);
+
+            access_type = FETCH;
+            check("S4 NA4 X-only unlocked, S-mode fetch: allow", 1'b1);
+
+            access_type = LOAD;
+            check("S5 NA4 X-only unlocked, S-mode load: fault", 1'b0);
+
+            // Same permissions, now locked: result must be identical to
+            // the unlocked case above, since L only affects M-mode.
+            pmpcfg[0] = cfg_locked(A_NA4, 1'b1, 1'b0, 1'b0);
+
+            access_type = FETCH;
+            check("S6 NA4 X-only locked, S-mode fetch: allow", 1'b1);
+
+            access_type = LOAD;
+            check("S7 NA4 X-only locked, S-mode load: fault", 1'b0);
+
+            // TOR region [0, 0xD000), RWX, entry 0.
+            clear_pmp();
+            priv_mode  = S_MODE;
+            pmpcfg[0]  = cfg(A_TOR, 1'b1, 1'b1, 1'b1);
+            pmpaddr[0] = 32'h0000_D000 >> 2;
+
+            addr        = 34'h0000_0000;
+            access_type = LOAD;
+            check("S8 TOR [0,0xD000): S-mode load at lower bound: allow", 1'b1);
+
+            addr        = 34'h0000_CFFF;
+            access_type = STORE;
+            check("S9 TOR [0,0xD000): S-mode store at upper-1: allow", 1'b1);
+
+            addr        = 34'h0000_D000;
+            access_type = LOAD;
+            check("S10 TOR [0,0xD000): S-mode load at exclusive upper: fault", 1'b0);
+
+            // NAPOT 16-byte region, RWX.
+            clear_pmp();
+            priv_mode  = S_MODE;
+            pmpcfg[0]  = cfg(A_NAPOT, 1'b1, 1'b1, 1'b1);
+            pmpaddr[0] = napot_addr(34'h0000_D000, 16);
+
+            addr        = 34'h0000_D000;
+            access_type = FETCH;
+            check("S11 NAPOT 16B RWX, S-mode fetch: allow", 1'b1);
+
+            addr        = 34'h0000_D010;
+            access_type = LOAD;
+            check("S12 NAPOT 16B just after region, S-mode load: fault", 1'b0);
+
+            // Priority: entry 0 (R-only) outranks entry 1 (RWX) in S-mode too.
+            clear_pmp();
+            priv_mode  = S_MODE;
+
+            pmpcfg[0]  = cfg(A_NA4, 1'b0, 1'b0, 1'b1);
+            pmpaddr[0] = 32'h0000_D000 >> 2;
+
+            pmpcfg[1]  = cfg(A_TOR, 1'b1, 1'b1, 1'b1);
+            pmpaddr[1] = 32'h0000_E000 >> 2;
+
+            addr        = 34'h0000_D000;
+            access_type = STORE;
+            check("S13 Priority: entry0 R-only beats entry1 RWX, S-mode store: fault", 1'b0);
+
+            access_type = LOAD;
+            check("S14 Priority: entry0 R-only beats entry1 RWX, S-mode load: allow", 1'b1);
+        end
+
+        // GROUP M: Multi-byte access spanning a region boundary
+        //   - A single access whose byte span leaves the matched region must
+        //     fault, even when its start address is inside the region. This
+        //     exercises the "match all bytes" requirement against a single
+        //     entry, complementing the two-entry partial-overlap case (H4).
+        begin : group_m_span
+            clear_pmp();
+            priv_mode = U_MODE;
+
+            // NA4 region covering [0x3000, 0x3004), RWX.
+            pmpcfg[0]  = cfg(A_NA4, 1'b1, 1'b1, 1'b1);
+            pmpaddr[0] = 32'h0000_3000 >> 2;
+
+            // 4-byte load fully inside the region: allow.
+            addr        = 34'h0000_3000;
+            access_size = 3'd2;
+            access_type = LOAD;
+            check("M1 4B load fully inside NA4: allow", 1'b1);
+
+            // 2-byte load straddling the upper edge [0x3003, 0x3005): fault.
+            addr        = 34'h0000_3003;
+            access_size = 3'd1;
+            access_type = LOAD;
+            check("M2 2B load straddles NA4 upper edge: fault", 1'b0);
+
+            // 4-byte load starting one byte past base [0x3001, 0x3005): fault.
+            addr        = 34'h0000_3001;
+            access_size = 3'd2;
+            access_type = LOAD;
+            check("M3 misaligned 4B load leaves NA4 region: fault", 1'b0);
+
+            // NAPOT 8-byte region [0x4000, 0x4008), RWX.
+            clear_pmp();
+            priv_mode  = U_MODE;
+            pmpcfg[0]  = cfg(A_NAPOT, 1'b1, 1'b1, 1'b1);
+            pmpaddr[0] = napot_addr(34'h0000_4000, 8);
+
+            // 8-byte load fully inside: allow.
+            addr        = 34'h0000_4000;
+            access_size = 3'd3;
+            access_type = LOAD;
+            check("M4 8B load fully inside NAPOT 8B: allow", 1'b1);
+
+            // 8-byte load starting at 0x4004 spans [0x4004, 0x400C): fault.
+            addr        = 34'h0000_4004;
+            access_size = 3'd3;
+            access_type = LOAD;
+            check("M5 8B load spills past NAPOT 8B region: fault", 1'b0);
+        end
+
+        // GROUP N: Empty TOR range
+        //   - When pmpaddr[i-1] >= pmpaddr[i] and entry i is TOR, the entry
+        //     matches no address. An access in the would-be range must fall
+        //     through to the no-match default (deny in U-mode).
+        begin : group_n_empty_tor
+            clear_pmp();
+            priv_mode = U_MODE;
+
+            // Entry 0 sets the lower bound above entry 1's upper bound.
+            pmpcfg[0]  = cfg(A_OFF, 1'b0, 1'b0, 1'b0);
+            pmpaddr[0] = 32'h0000_2000 >> 2;
+
+            // Entry 1 TOR with upper bound below the lower bound: empty range.
+            pmpcfg[1]  = cfg(A_TOR, 1'b1, 1'b1, 1'b1);
+            pmpaddr[1] = 32'h0000_1000 >> 2;
+
+            addr        = 34'h0000_1800;
+            access_size = 3'd2;
+            access_type = LOAD;
+            check("N1 Empty TOR (hi<lo) matches nothing, U-mode load: fault", 1'b0);
+
+            // Sanity: a normal non-empty TOR at entry 1 still matches.
+            clear_pmp();
+            priv_mode  = U_MODE;
+            pmpcfg[0]  = cfg(A_OFF, 1'b0, 1'b0, 1'b0);
+            pmpaddr[0] = 32'h0000_1000 >> 2;
+            pmpcfg[1]  = cfg(A_TOR, 1'b1, 1'b1, 1'b1);
+            pmpaddr[1] = 32'h0000_2000 >> 2;
+
+            addr        = 34'h0000_1800;
+            access_size = 3'd2;
+            access_type = LOAD;
+            check("N2 Non-empty TOR [0x1000,0x2000) load: allow", 1'b1);
         end
 
         /*

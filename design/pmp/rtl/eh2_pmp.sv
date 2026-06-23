@@ -92,8 +92,14 @@ import eh2_pkg::*;
             assign pmp_allow = (priv_mode == PRIV_M);
         end else begin : gen_with_pmp
 
-            logic match   [NUM_ENTRIES];   // entry's region covers this access
-            logic perm_ok [NUM_ENTRIES];   // entry permits this access type
+            // match_any[i] : entry i's region overlaps at least one byte of the access
+            // match_all[i] : entry i's region covers every byte of the access
+            // Per Section 3.7.1.3, the lowest-numbered entry with match_any=1 is the
+            // one that decides the result. That entry must also have match_all=1, or
+            // the access fails regardless of its L/R/W/X bits.
+            logic match_any [NUM_ENTRIES];
+            logic match_all [NUM_ENTRIES];
+            logic perm_ok   [NUM_ENTRIES];   // entry permits this access type
 
             for (i = 0; i < NUM_ENTRIES; i++) begin : gen_entry
                 // Config field extraction
@@ -121,64 +127,82 @@ import eh2_pkg::*;
                 logic [PA_BITS-1:0]     trailing_mask;
                 logic [PADDR_WIDTH-1:0] napot_mask;
                 logic [PADDR_WIDTH-1:0] napot_base;
+                logic [PADDR_WIDTH-1:0] napot_hi;     // inclusive upper bound
 
                 assign trailing_mask = pmpaddr_napot_eff ^ (pmpaddr_napot_eff + 1'b1);
                 assign napot_mask    = {trailing_mask, 2'b11};
                 assign napot_base    = {pmpaddr_napot_eff, 2'b00} & ~napot_mask;
+                assign napot_hi      = napot_base | napot_mask;
 
-                // TOR bounds
+                // NA4 region bounds: exact 4-byte aligned region.
+                logic [PADDR_WIDTH-1:0] na4_base;
+                logic [PADDR_WIDTH-1:0] na4_hi;        // inclusive upper bound
+
+                assign na4_base = {pmpaddr[i], 2'b00};
+                assign na4_hi   = {pmpaddr[i], 2'b11};
+
+                // TOR bounds (half-open interval [tor_lo, tor_hi))
                 //  Entry i matches addr y if  pmpaddr[i-1] ≤ y < pmpaddr[i].
                 //   Entry 0 uses 0 as its lower bound.
                 //   The lower bound uses pmpaddr[i-1] regardless of pmpcfg[i-1].A.
                 logic [PADDR_WIDTH-1:0] tor_lo, tor_hi;
-                logic tor_addr_in_range;
-                logic tor_addr_last_in_range;
+                logic tor_match_any;
+                logic tor_match_all;
 
                 assign tor_hi = {pmpaddr_tor_eff, 2'b00};
-
                 if (i == 0) begin : gen_tor_lo_entry0
-                    assign tor_lo = '0;
-                    // tor_lo is 0 for entry 0; skip redundant unsigned >= 0 checks
-                    assign tor_addr_in_range      = (addr      < tor_hi);
-                    assign tor_addr_last_in_range = (addr_last < tor_hi);
+                assign tor_lo        = '0;
+                assign tor_match_any = (addr < tor_hi);
+                assign tor_match_all = (addr_last < tor_hi);
                 end else begin : gen_tor_lo_entryN
-                    // Apply TOR granularity mask to predecessor's pmpaddr as well
-                    assign tor_lo = {(pmpaddr[i-1] & ~GRAN_MASK_TOR), 2'b00};
-                    assign tor_addr_in_range      = (addr      >= tor_lo) && (addr      < tor_hi);
-                    assign tor_addr_last_in_range = (addr_last >= tor_lo) && (addr_last < tor_hi);
+                assign tor_lo = {(pmpaddr[i-1] & ~GRAN_MASK_TOR), 2'b00};
+                assign tor_match_any = (addr < tor_hi) && (addr_last >= tor_lo);
+                assign tor_match_all = (addr >= tor_lo) && (addr_last < tor_hi);
                 end
 
-                //Address match logic
+                // Address match logic
+                //   match_any : the entry's region overlaps any byte of [addr, addr_last]
+                //   match_all : the entry's region covers every byte of [addr, addr_last]
                 always_comb begin
                     case (mode_i)
 
                         A_OFF: begin
-                            match[i] = 1'b0;
+                            match_any[i] = 1'b0;
+                            match_all[i] = 1'b0;
                         end
 
                         A_TOR: begin
-                            // Both first and last byte must be in [tor_lo, tor_hi). empty range (tor_lo ≥ tor_hi) matches nothing.
-                            match[i] = (tor_lo < tor_hi)
-                                    && tor_addr_in_range
-                                    && tor_addr_last_in_range;
+                            // Half-open region [tor_lo, tor_hi). Empty when tor_lo >= tor_hi
+                            // (e.g. pmpaddr[i-1] >= pmpaddr[i]); such an entry matches nothing.
+                            if (tor_lo < tor_hi) begin
+                                match_any[i] = tor_match_any;
+                                match_all[i] = tor_match_all;
+                            end else begin
+                                match_any[i] = 1'b0;
+                                match_all[i] = 1'b0;
+                            end
                         end
 
                         A_NA4: begin
                             // NA4 is unavailable when G ≥ 1.
                             if (G >= 1) begin
-                                match[i] = 1'b0;
+                                match_any[i] = 1'b0;
+                                match_all[i] = 1'b0;
                             end else begin
-                                // Exact 4-byte region; pmpaddr encodes addr[PADDR_WIDTH-1:2].Both endpoints must share the same upper bits
-                                match[i] = (addr[PADDR_WIDTH-1:2]      == pmpaddr[i])
-                                        && (addr_last[PADDR_WIDTH-1:2] == pmpaddr[i]);
+                                match_any[i] = (addr      <= na4_hi)   && (addr_last >= na4_base);
+                                match_all[i] = (addr      >= na4_base) && (addr_last <= na4_hi);
                             end
                         end
+
                         A_NAPOT: begin
-                            // Both endpoints must fall within the same NAPOT region.
-                            match[i] = ((addr      & ~napot_mask) == napot_base)
-                                    && ((addr_last & ~napot_mask) == napot_base);
+                            match_any[i] = (addr      <= napot_hi)   && (addr_last >= napot_base);
+                            match_all[i] = (addr      >= napot_base) && (addr_last <= napot_hi);
                         end
-                        default: match[i] = 1'b0;
+
+                        default: begin
+                            match_any[i] = 1'b0;
+                            match_all[i] = 1'b0;
+                        end
                     endcase
                 end
 
@@ -211,16 +235,21 @@ import eh2_pkg::*;
 
             // The lowest-numbered PMP entry that matches any byte of an
             //   access determines whether that access succeeds or fails.
+            //   If that entry does not match every byte of the access, the
+            //   access fails irrespective of L/R/W/X (Section 3.7.1.3).
             logic any_match;
-            logic matched_allow;
+            logic sel_match_all;
+            logic sel_perm_ok;
 
             always_comb begin
                 any_match     = 1'b0;
-                matched_allow = 1'b0;
+                sel_match_all = 1'b0;
+                sel_perm_ok   = 1'b0;
                 for (int j = NUM_ENTRIES-1; j >= 0; j--) begin
-                    if (match[j]) begin
+                    if (match_any[j]) begin
                         any_match     = 1'b1;
-                        matched_allow = perm_ok[j];
+                        sel_match_all = match_all[j];
+                        sel_perm_ok   = perm_ok[j];
                     end
                 end
             end
@@ -228,7 +257,9 @@ import eh2_pkg::*;
 
             //   No match, M    : allow (M-mode default when no entry covers the addr).
             //   No match, S/U  : deny.
-            assign pmp_allow = any_match ? matched_allow : (priv_mode == PRIV_M);
+            //   Match found    : succeeds only if the selected entry covers the whole
+            //                    access AND its permission bits allow this access type.
+            assign pmp_allow = any_match ? (sel_match_all && sel_perm_ok) : (priv_mode == PRIV_M);
 
         end : gen_with_pmp
 
